@@ -1,4 +1,3 @@
-
 # User input
 
 k # Number of points to sample from the user
