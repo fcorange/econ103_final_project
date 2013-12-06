@@ -37,6 +37,7 @@ rejection_test <- funcion(x_star, u_star) { #Cindy
 }
 
 sample_val <- function() {  #Cindy
+  #1 sample from trapozoid
   return(x_star, u_star)
 }
 
