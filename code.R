@@ -11,6 +11,11 @@ g<-function(x) exp(-x^2/2)
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   #initialization
+  # Perform input check
+  # ---- n and k need to be a postiive integer
+  # ---- g?
+  # ---- xlb should be smaller than xub
+  
   
   while(length(sample)<n){ # while sample size n not reached, sample+update
     #sampling
@@ -35,7 +40,7 @@ ARS<-function(k,g,n,xlb,xub){
 
 # Function
 # ---- For now I'm assuming g is not vectorized
-h <- function(g, x) { #Zixiao
+h <- function(x) { #Zixiao
   return(log(g(x)))
 }
 
