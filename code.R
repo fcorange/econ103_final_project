@@ -2,8 +2,9 @@
 
 k # Number of points to sample from the user
 g(x) # Density
-
-
+n # Sample size desired
+xlb # lower bound of x
+xub # upper bound of x
 
 # Function
 h(x)
@@ -28,17 +29,61 @@ get_z <- function(T_k) { #Zixiao
   return(z)
 }
 
+### Cindy's DRAFT functions ###
+
+# Assuming u_k(x) looks like:
+# u_k <- if(x >= x1 & x <x2) return u1_k(x;x1),
+# elseif(x >=x2 & x < x3,  u2_k(x;x2), ...
+
+
+# Axillary function
+cdf_u<-function(xj,temp){
+  # depends on h(x); cdf-temp
+  # I put in a dummy function for mow
+  if (xj>=1 && xj<2){
+    function(x) x-1-temp
+  }else if(xj>=2 && xj<3){
+    function(x) x-2-temp
+  }else if(xj>=3 && xj<4){
+    function(x) x-3-temp
+  }else if(xj>=4 && xj<5){
+    function(x) x-4-temp
+  }
+}
+
+#dummy functions for testing
+k=5
+T_k<-1:5
+h <- function (x) x
+#area of trapozoid
+a<-function(i) return((h(T_k[i])+h(T_k[i-1]))*(T_k[i]-T_k[i-1])*0.5)
+Area<-unlist(lapply(2:k,a))
+cumArea<-c(0,cumsum(Area))
+
+#dummy cumArea
+cumArea<-seq(0.2,1,0.2)
+sample_val <- function(T_k,cumArea) {  #Cindy
+  # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
+  temp<-runif(1)
+  # x_star between T_k[1], t_k[k]
+  for (i in 1:(k-1)){
+   if(temp>=cumArea[i] && temp<cumArea[i+1]){
+    x_star<-uniroot(cdf_u(T_k[i],temp), lower =T_k[i], upper =T_k[i+1])[1]
+    break
+   }
+  }
+  # sample u* from uniform(0,1)
+  u_star<-runif(1)
+  return(c(x_star, u_star))
+}
+
 squeeze_test <- function(x_star, u_star) { #Cindy
+  
   return(Boolean)
 }
 
 rejection_test <- funcion(x_star, u_star) { #Cindy
   return(Boolean)
-}
-
-sample_val <- function() {  #Cindy
-  #1 sample from trapozoid
-  return(x_star, u_star)
 }
 
 update <- function(x_star) { #Zixiao
