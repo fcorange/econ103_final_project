@@ -9,6 +9,11 @@ xub # upper bound of x
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   #initialization
+  # Perform input check
+  # ---- n and k need to be a postiive integer
+  # ---- g?
+  # ---- xlb should be smaller than xub
+  
   
   while(length(sample)<n){ # while sample size n not reached, sample+update
     #sampling
