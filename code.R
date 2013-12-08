@@ -130,6 +130,11 @@ rejection_test <- funcion(x_star, u_star) { #Cindy
   return(Boolean)
 }
 
+# ---- Function to check if the upper and lower bounds are not actually bounding the density, i.e. the log-concavity is violated
+check_concave <- function(u_k, l_k) {
+  return(sum((sum(u_k < h(u_k))==0) + (sum(l_k > h(l_k))==0)) == 2)
+}
+
 update <- function(x_star) { #Zixiao
   T_k <- sort(append(T_k, x_star))
 }
