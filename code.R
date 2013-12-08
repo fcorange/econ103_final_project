@@ -6,6 +6,31 @@ n # Sample size desired
 xlb # lower bound of x
 xub # upper bound of x
 
+### OUR PARENT FUNCTION ARS() ###
+ARS<-function(k,g,n,xlb,xub){
+  #initialization
+  
+  while(length(sample)<n){ # while sample size n not reached, sample+update
+    #sampling
+    sample_point<-sample_val()
+    squeeze<-squeeze_test(sample_point)
+    if (squeeze==F){
+      reject<-rejection_test(sample_point)
+    }
+    if(squeeze==T || reject==T){
+      sample<-c(sample,sample_point)
+    }
+    
+    #updating
+    if (squeeze==F){
+      #update
+    }
+  }
+  
+}
+######
+
+
 # Function
 h(x)
 
@@ -34,7 +59,8 @@ get_z <- function(T_k) { #Zixiao
 # Assuming u_k(x) looks like:
 # u_k <- if(x >= x1 & x <x2) return u1_k(x;x1),
 # elseif(x >=x2 & x < x3,  u2_k(x;x2), ...
-
+# So u_k(x) gives me the function
+# u_k(x)(x) gives me the value of u_k evaluated at x
 
 # Axillary function
 cdf_u<-function(xj,temp){
@@ -67,10 +93,10 @@ sample_val <- function(T_k,cumArea) {  #Cindy
   temp<-runif(1)
   # x_star between T_k[1], t_k[k]
   for (i in 1:(k-1)){
-   if(temp>=cumArea[i] && temp<cumArea[i+1]){
-    x_star<-uniroot(cdf_u(T_k[i],temp), lower =T_k[i], upper =T_k[i+1])[1]
-    break
-   }
+    if(temp>=cumArea[i] && temp<cumArea[i+1]){
+      x_star<-uniroot(cdf_u(T_k[i],temp), lower =T_k[i], upper =T_k[i+1])[1]
+      break
+    }
   }
   # sample u* from uniform(0,1)
   u_star<-runif(1)
@@ -78,18 +104,22 @@ sample_val <- function(T_k,cumArea) {  #Cindy
 }
 
 squeeze_test <- function(x_star, u_star) { #Cindy
-  
+  test<-exp(l_k(x_star)(x_star)-u_k(x_star)(x_star))
+  Boolean<-ifelse(u_star<=test,T,F)
+  # T=accept, F=reject
+  ### QUESTION: Why do we need to evaluate h(x*) and h'(x*) here???
   return(Boolean)
 }
 
-rejection_test <- funcion(x_star, u_star) { #Cindy
+rejection_test <- funcion(x_star, u_star) { #Cindy 
+  test<-exp(h(x_star)(x_star)-u_k(x_star)(x_star))
+  Boolean<-ifelse(u_star<=test,T,F)
   return(Boolean)
 }
 
 update <- function(x_star) { #Zixiao
   
 }
-
 
 
 
