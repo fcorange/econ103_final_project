@@ -6,6 +6,8 @@ n # Sample size desired
 xlb # lower bound of x
 xub # upper bound of x
 
+g<-function(x) exp(-x^2/2)
+
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   #initialization
@@ -18,7 +20,7 @@ ARS<-function(k,g,n,xlb,xub){
       reject<-rejection_test(sample_point)
     }
     if(squeeze==T || reject==T){
-      sample<-c(sample,sample_point)
+      sample<-c(sample,sample_point[1])
     }
     
     #updating
@@ -165,7 +167,7 @@ cumArea<-seq(0.2,1,0.2)
 sample_val <- function(T_k,cumArea) {  #Cindy
   # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
   temp<-runif(1)
-  # x_star between T_k[1], t_k[k]
+  # x_star between T_k[1], T_k[k]
   for (i in 1:(k-1)){
     if(temp>=cumArea[i] && temp<cumArea[i+1]){
       x_star<-uniroot(cdf_u(T_k[i],temp), lower =T_k[i], upper =T_k[i+1])[1]
