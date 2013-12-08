@@ -1,7 +1,7 @@
 # User input
 
 k # Number of points to sample from the user
-g(x) # Density
+g(x) # Density (can be unnormalized)
 n # Sample size desired
 xlb # lower bound of x
 xub # upper bound of x
@@ -32,8 +32,10 @@ ARS<-function(k,g,n,xlb,xub){
 
 
 # Function
-h(x)
-
+# ---- For now I'm assuming g is not vectorized
+h <- function(g, x) { #Zixiao
+  return(log(g(x)))
+}
 
 T_k <- vector()
 
