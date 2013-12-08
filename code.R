@@ -37,6 +37,10 @@ h(x)
 
 T_k <- vector()
 
+# ---- Calculate Derivative of a function ----
+library("numDeriv")
+# ----
+
 
 u_k <- function(x) { #Edward
   
@@ -50,8 +54,15 @@ l_k <- function() { #Edward
   
 }
 
-get_z <- function(T_k) { #Zixiao
-  return(z)
+get_z_k <- function(T_k) { #Zixiao
+  z_k <- vector()
+  for (i in 2:(length(T_k)) {
+    z_k(i) <- (h(T_k[i+1]) - h(T_k[i]) - T_k[i+1] * grad(h, T_k[i+1]) + T_k[i] * grad(h, T_k[i])) / (grad(h, T_k[i]) - grad(h, T_k[i+1]))
+  }
+  # Caution: Here I assumed that domain D is unbounded in either direction
+  z_k[1] <- -Inf
+  z_k[(length(T_k)+1)] <- Inf
+  return(z_k)
 }
 
 ### Cindy's DRAFT functions ###
