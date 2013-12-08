@@ -33,7 +33,7 @@ ARS<-function(k,g,n,xlb,xub){
 
 # Function
 # ---- For now I'm assuming g is not vectorized
-h <- function(g, x) { #Zixiao
+h <- function(x) { #Zixiao
   return(log(g(x)))
 }
 
