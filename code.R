@@ -209,28 +209,28 @@ update <- function(x_star) { #Zixiao
 }
 
 check_input <- function(k,g,n,xlb,xub) {
- if ((k<=0)||(k%%1!=0)) {
-   print("Number of points to sample must be a positive integer")
-   return(FALSE)
- }
- else {
-   if ((n<=0)||(n%%1!=0)) {
-     print("Sample size must be a positive integer")
+  if ((k<=0)||(k%%1!=0)) {
+     print("Number of points to sample must be a positive integer")
      return(FALSE)
-   }
-   else {
-     if (xlb>=xub) {
-       print("Lower bound of domain must be smaller than upper bound")
-       return(FALSE)
-     }
-     else {
-       if (typeof(g)!="closure") {
-         print("Input density is not a function")
-         return(FALSE)
-       }
-     }
-   }
- }
+  }
+  else {
+    if ((n<=0)||(n%%1!=0)) {
+      print("Sample size must be a positive integer")
+      return(FALSE)
+    }
+    else {
+      if (xlb>=xub) {
+        print("Lower bound of domain must be smaller than upper bound")
+        return(FALSE)
+      }
+      else {
+        if (typeof(g)!="closure") {
+          print("Input density is not a function")
+          return(FALSE)
+        }
+      }
+    }
+  }
 }
 
 
