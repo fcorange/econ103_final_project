@@ -228,6 +228,9 @@ check_input <- function(k,g,n,xlb,xub) {
           print("Input density is not a function")
           return(FALSE)
         }
+        else {
+          return(TRUE)
+        }
       }
     }
   }
