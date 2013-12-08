@@ -118,7 +118,7 @@ rejection_test <- funcion(x_star, u_star) { #Cindy
 }
 
 update <- function(x_star) { #Zixiao
-  
+  T_k <- sort(append(T_k, x_star))
 }
 
 
