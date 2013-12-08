@@ -101,8 +101,8 @@ u_k <- function(x) {
 # S_k transformation where x sampled from u_k #
 S_k <- function(x) {
   area <- 0 
-  area <- area + (z[1]-T_k[1])*(u_k(z[1])+func(T_k[1])[1])/2
-  area <- area + (T_k[k]-z[k-1])*(u_k(z[k-1])+func(T_k[k])[1])/2
+  area <- area + (z[1]-T_k[1])*(u_k(z[1])+h(T_k[1])[1])/2
+  area <- area + (T_k[k]-z[k-1])*(u_k(z[k-1])+h(T_k[k])[1])/2
   for (i in 1:(length(T_k)-2)){
     area <- area + (z[i+1]-z[i])*(u_k(z[i])+u_k(z[i]))/2
   }
@@ -164,7 +164,8 @@ T_k<-1:5
 h <- function (x) x
 #area of trapozoid
 a<-function(i) return((h(T_k[i])+h(T_k[i-1]))*(T_k[i]-T_k[i-1])*0.5)
-Area<-unlist(lapply(2:k,a))
+Area<-unlist(lapply(2:k,a)) 
+# add the two trapozoids/triangles on both end with given xub,xlb.
 cumArea<-c(0,cumsum(Area))
 
 #dummy cumArea
