@@ -249,12 +249,10 @@ update <- function(x_star) { #Zixiao
   T_k <- sort(append(T_k, x_star))
 }
 
-<<<<<<< HEAD
-=======
 check_input <- function(k,g,n,xlb,xub) {
   if ((k<=0)||(k%%1!=0)) {
-     print("Number of points to sample must be a positive integer")
-     return(FALSE)
+    print("Number of points to sample must be a positive integer")
+    return(FALSE)
   }
   else {
     if ((n<=0)||(n%%1!=0)) {
@@ -278,8 +276,3 @@ check_input <- function(k,g,n,xlb,xub) {
     }
   }
 }
-
-
-
-
->>>>>>> 2d6e913f354fdd669b10b6c47b424a536734f511
