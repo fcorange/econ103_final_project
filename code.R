@@ -12,7 +12,7 @@ library("numDeriv")
 ### MAIN FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   # Initialization
-  h <- function(x) (return(log(g(x))))    # 
+  h <- function(x) (return(log(g(x))))    # Function h = log(g)
   sample <- vector()                      # Vector that stores all the sampled points (different from T_k)
   T_k <- compute_T_k()                    # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)              # Obtain the values of h evaluated at T_k 
@@ -39,13 +39,6 @@ ARS<-function(k,g,n,xlb,xub){
   return(sample)
 }
 ######
-
-
-# Function
-# ---- For now I'm assuming g is not vectorized
-h <- function(x) { #Zixiao
-  return(log(g(x)))
-}
 
 
 
