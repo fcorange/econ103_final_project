@@ -139,35 +139,21 @@ compute_z_k <- function(T_k) { #Zixiao
 
 ### Cindy's DRAFT functions ###
 
-# Assuming u_x(x) looks like:
-# u_x <- if(x >= x1 & x <x2) return u1_k(x;x1),
-# elseif(x >=x2 & x < x3,  u2_k(x;x2), ...
-# So u_x(x) gives me the function
-# u_x(x)(x) gives me the value of u_x evaluated at x
+# s_k(x) gives me the function
+# s_k(x)(x) gives me the value of u_x evaluated at x
 
 # Axillary function
-cdf_u<-function(xj,zi,i,temp){
-  # depends on h(x); cdf-temp
-  ux<-u_x(xj)
-  cdf<-ux
-  return function(x) (x-zi)*(ux(zi)+ux(x))/2+cumArea[i]-temp
-  # I put in a dummy function for mow
-  if (xj>=1 && xj<2){
-    function(x) x-1-temp
-  }else if(xj>=2 && xj<3){
-    function(x) x-2-temp
-  }else if(xj>=3 && xj<4){
-    function(x) x-3-temp
-  }else if(xj>=4 && xj<5){
-    function(x) x-4-temp
-  }
+cdf_u<-function(xj,hprimej,cumAreaj,temp){
+  # 1/b*s_k(x)
+  cdf<-1/hprimej*s_k(xj,...)
+  return function(x) cdf+cumAreaj-temp
 }
 
 #dummy functions for testing
 k=5
 T_k<-1:5
 h <- function (x) x
-#area of trapozoid (need to reconstruct with z[i]!!!!!!!!!)
+#area under sk(x)
 a<-function(i) return((h(T_k[i])+h(T_k[i-1]))*(T_k[i]-T_k[i-1])*0.5)
 Area<-unlist(lapply(2:k,a)) 
 # add the two trapozoids/triangles on both end with given xub,xlb.
@@ -175,18 +161,13 @@ cumArea<-c(0,cumsum(Area))
 
 #dummy cumArea
 cumArea<-seq(0.2,1,0.2)
-sample_val <- function(T_k,cumArea) {  #Cindy
+sample_val <- function(T_k,cumArea,h_k_prime,z_k) {  #Cindy
   # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
   temp<-runif(1)
   # x_star between T_k[1], T_k[k]
   for (i in 1:(k-1)){
-    if (temp<cumArea[2]){
-      x_star<-uniroot(cdf_u(T_k[1],T_k[1],temp), lower =T_k[1], upper =z[1])[1]
-      break
-    } else if (temp>cumArea[k]){
-       # NEED TO BUILD ON THE AREA FUNCTION      
-    } else if(temp>=cumArea[i] && temp<cumArea[i+1]){
-      x_star<-uniroot(cdf_u(T_k[i],z[i-1],temp), lower =z[i-1], upper =z[i])[1]
+    if(temp>=cumArea[i] && temp<cumArea[i+1]){
+      x_star<-uniroot(cdf_u(T_k[i],h_k_prime[i],cumArea[i],temp), lower =z[i-1], upper =z[i])[1]
       break
     }
   }
