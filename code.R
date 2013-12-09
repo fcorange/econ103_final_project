@@ -167,20 +167,17 @@ A_k <- 0
 for (i in 1:length(T_k)){
   A_k[i] <- A(i,h_k, h_k_prime, z_k, T_k)
 }
+## cumulative area, starting from zero
+cumArea<-c(0,cumsum(A_k))
 
 ### S_k returns a function specified in the slides
-S_k <- function(x, h_k, h_k_prime, z_k, T_k) {
-  A_k <- 0
-  for (i in 1:length(T_k)){
-    A_k[i] <- A(i,h_k, h_k_prime, z_k, T_k)
-  } 
-  
+S_k <- function(x, h_k, h_k_prime, z_k, T_k, A_k) { 
   composite<-function(f,g) function(...) f(g(...))
   f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,x)(x)
   g<-function(x) exp(x)/sum(A_k)
   return(composite(g,f))
 }
-S_k(.5, h_k, h_k_prime, z_k, T_k)(.5) # S_k valued at .5
+S_k(.5, h_k, h_k_prime, z_k, T_k, A_k)(.5) # S_k valued at .5
 
 #################### Edward's 2nd DRAFT functions ENDs #################### 
 
@@ -198,34 +195,26 @@ compute_z_k <- function(T_k) { #Zixiao
 ### Cindy's DRAFT functions ###
 
 # s_k(x) gives me the function
-# s_k(x)(x) gives me the value of u_x evaluated at x
+# s_k(x)(x) gives me the value evaluated at x
 
 # Axillary function
-cdf_u<-function(xj,hprimej,cumAreaj,temp){
+cdf_u<-function(xj,hprimej,cumAreaj,temp,h_k, h_k_prime, z_k, T_k, A_k){ #CREATE A DATAFRAME??
   # 1/b*s_k(x)
-  cdf<-1/hprimej*s_k(xj,...)
+  cdf<-1/hprimej*S_k(xj,h_k, h_k_prime, z_k, T_k, A_k)
   return function(x) cdf+cumAreaj-temp
 }
 
-#dummy functions for testing
-k=5
-T_k<-1:5
-h <- function (x) x
-#area under sk(x)
-a<-function(i) return((h(T_k[i])+h(T_k[i-1]))*(T_k[i]-T_k[i-1])*0.5)
-Area<-unlist(lapply(2:k,a)) 
-# add the two trapozoids/triangles on both end with given xub,xlb.
-cumArea<-c(0,cumsum(Area))
 
-#dummy cumArea
-cumArea<-seq(0.2,1,0.2)
-sample_val <- function(T_k,cumArea,h_k_prime,z_k) {  #Cindy
+sample_val <- function(T_k,cumArea,h_k_prime,z_k,...) {  #Cindy
   # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
   temp<-runif(1)
   # x_star between T_k[1], T_k[k]
   for (i in 1:(k-1)){
-    if(temp>=cumArea[i] && temp<cumArea[i+1]){
-      x_star<-uniroot(cdf_u(T_k[i],h_k_prime[i],cumArea[i],temp), lower =z[i-1], upper =z[i])[1]
+    if(temp<cumArea[2]){
+      x_star<-uniroot(cdf_u(T_k[1],h_k_prime[1],cumArea[1],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =T_k[1], upper =z[1])[1]
+      break
+    }else if(temp>=cumArea[i] && temp<cumArea[i+1]){
+      x_star<-uniroot(cdf_u(T_k[i],h_k_prime[i],cumArea[i],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =z[i-1], upper =z[i])[1]
       break
     }
   }
@@ -238,7 +227,7 @@ squeeze_test <- function(x_star, u_star) { #Cindy
   test<-exp(l_k(x_star)-u_x(x_star)(x_star))
   Boolean<-ifelse(u_star<=test,T,F)
   # T=accept, F=reject
-  ### QUESTION: Why do we need to evaluate h(x*) and h'(x*) here???
+  ### QUESTION: Why do we need to evaluate h(x*) and h'(x*) here?
   return(Boolean)
 }
 
