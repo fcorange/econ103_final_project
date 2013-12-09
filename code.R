@@ -83,10 +83,10 @@ compute_T_k <- function(){ # draw k integers from domain D
 T_k <- compute_T_k() # update global variable T_k
 
 ###### function evaluated at T_k  ######  
-h_func <- function(T_k, h){
-  return(sapply(T_k, h))
+compute_h_k <- function(T_k, h){
+  return(h(T_k))
 }
-h_k <- h_func(T_k, h) # function evaluated at T_k
+h_k <- compute_h_k(T_k, h) # function evaluated at T_k
 
 ###### h derivative  ######  
 grad <- function(T_k,h){
