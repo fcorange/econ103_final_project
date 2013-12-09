@@ -10,30 +10,32 @@ g<-function(x) exp(-x^2/2)
 
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
-  #initialization
-  # Perform input check
-  # ---- n and k need to be a postiive integer
-  # ---- g?
-  # ---- xlb should be smaller than xub
+  # Initialization
+  h <- function(x) (return(log(g(x))))    # 
+  sample <- vector()                      # Vector that stores all the sampled points (different from T_k)
+  T_k <- compute_T_k()                    # Initialize the evenly spaced x points on domain D
+  h_k <- compute_h_k(T_k, h)              # Obtain the values of h evaluated at T_k 
+  z_k_prime <- grad(h, T_k)               # Obtain the derivative of h evaluated at T_k
+  z_k <- compute_z_k(T_k, h_k, h_k_prime) # Obtain the intersections of tangent lines (k+1 elements)
   
   
-  while(length(sample)<n){ # while sample size n not reached, sample+update
-    #sampling
-    sample_point<-sample_val()
-    squeeze<-squeeze_test(sample_point)
-    if (squeeze==F){
-      reject<-rejection_test(sample_point)
+  # Sampling
+  while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
+    sample_point <- sample_val()
+    squeeze <- squeeze_test(sample_point)
+    if (squeeze == F){
+      reject <- rejection_test(sample_point)
     }
-    if(squeeze==T || reject==T){
-      sample<-c(sample,sample_point[1])
+    if((squeeze == T) || (reject == T)){
+      sample <- c(sample, sample_point[1])
     }
     
-    #updating
+    # Updating
     if (squeeze==F){
-      #update
+      update(sample_point[1], T_k, h_k, h_k_prime, z_k, u_k, l_k)
     }
   }
-  
+  return(sample)
 }
 ######
 
