@@ -245,9 +245,18 @@ check_concave <- function(u_x, l_k) {
   return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
 }
 
-update <- function(x_star) { #Zixiao
+update <- function(x_star, T_k, h_k, h_k_prime, z_k, u_k, l_k) { #Zixiao
   T_k <- sort(append(T_k, x_star))
-}
+  position <- (which(T_k == x_star) - 1)
+  h_k <- append(h_k, compute_h_k(x_star, h), after = position)
+  h_k_prime <- append(h_k_prime, grad(h, x_star), after = position)
+  z_k <- compute_z_k(T_k, h_k, h_k_prime)
+  u_k <- append(u_k, compute_u_k(h_k,h_k_prime,z_k,x_star)(x_star), after = position)
+  l_k <- append(l_k, compute_l_k(T_k,h_k,x_star)(x_star), after = position)
+  A_k <- append(A_k, A(position+1, h_k, h_k_prime, z_k, T_k), after = position)
+  A_k[position+2] <- A(position+2, h_k, h_k_prime, z_k, T_k)
+  cumArea <- cumsun(A_k/sum(A_k))
+} 
 
 check_input <- function(k,g,n,xlb,xub) {
   if ((k<=0)||(k%%1!=0)) {
