@@ -9,16 +9,22 @@ xub   # Upper bound of domain
 library("numDeriv")
 
 
-### MAIN FUNCTION ARS() ###
+### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   # Initialization
-  h <- function(x) (return(log(g(x))))    # Function h = log(g)
-  sample <- vector()                      # Vector that stores all the sampled points (different from T_k)
-  T_k <- compute_T_k()                    # Initialize the evenly spaced x points on domain D
-  h_k <- compute_h_k(T_k, h)              # Obtain the values of h evaluated at T_k 
-  z_k_prime <- grad(h, T_k)               # Obtain the derivative of h evaluated at T_k
-  z_k <- compute_z_k(T_k, h_k, h_k_prime) # Obtain the intersections of tangent lines (k+1 elements)
-  
+  h <- function(x) (return(log(g(x))))            # Function h = log(g)
+  sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
+  T_k <- compute_T_k()                            # Initialize the evenly spaced x points on domain D
+  h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
+  h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
+  z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k+1 elements)
+  u_k <- compute_u_k(h_k, h_k_prime,z_k,T_k)(T_k) # Obtain the upper bound on T_k. Note that compute_u_k gives a function
+  l_k <- compute_l_k(T_k, h_k)                    # Obtain the lower bound on T_k
+  A_k <- vector()                                 # Initilize the areas
+  for (i in 1:length(T_k)) {                    
+    A_k[i] <- A(i, h_k, h_k_prime, z_k, T_k)
+  }
+  cumArea <- cumsum(A_k/sum(A_k))                 # Cumulative area
   
   # Sampling
   while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
