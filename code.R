@@ -1,14 +1,15 @@
-# User input
+# ---- User inputs
+k     # Number of points to sample from the user
+g     # Density (can be unnormalized)
+n     # Sample size desired
+xlb   # Lower bound of domain
+xub   # Upper bound of domain
 
-k # Number of points to sample from the user
-g(x) # Density (can be unnormalized)
-n # Sample size desired
-xlb # lower bound of x
-xub # upper bound of x
+# ---- Library for calculating derivatives
+library("numDeriv")
 
-g<-function(x) exp(-x^2/2)
 
-### OUR PARENT FUNCTION ARS() ###
+### MAIN FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   # Initialization
   h <- function(x) (return(log(g(x))))    # 
@@ -46,9 +47,7 @@ h <- function(x) { #Zixiao
   return(log(g(x)))
 }
 
-# ---- Calculate Derivative of a function ----
-library("numDeriv")
-# ----
+
 
 #################### Edward's 2nd DRAFT functions STARTs #################### 
 
