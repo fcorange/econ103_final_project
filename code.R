@@ -48,83 +48,141 @@ h <- function(x) { #Zixiao
 library("numDeriv")
 # ----
 
-### Edward's DRAFT functions START ###
+#################### Edward's 2nd DRAFT functions STARTs #################### 
+
+## Caution: Inputs are assumed reasonable ##
+## Also, function must be defined s.t. mode is in D ##
 
 k<-20
-vec <- c(-2,2) # global Domain
-#vec <- c(-1,1) # global D
-T_k <- rep(0,k) # global T_k
+xlb <- -1 # lowerbound
+xub <- 1 # upperbound
+n<-100
 
-# func and deriv #
-#func <- function(x)  ((2*pi)^-0.5)*exp(-(x)^2/2) # given function as standard normal
-func <- function(x)  exp(x)/((1+exp(x))^2) # given function as logistic
-body(func) <- deriv(body(func), "x")
+######  define g ######  
+g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
+# h <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given function as standard normal
+# body(h) <- deriv(body(h), "x")
+# h <- function(x)  exp(x)/((1+exp(x))^2) # given function as standard normal
 
-# evenly find T_k in D #
-compute_T_k <- function(k){ # draw k integers from domain D
-  T_k[1] <- vec[1]
-  T_k[k] <- vec[2]
+######  log g = h ######  
+composite <- function(f,g) function(...) f(g(...))
+log <- function(x) log(x);
+h <- composite(log, g)
+body(h) <- deriv(body(h), "x")
+
+######  evenly initialize  find T_k in D ######  
+compute_T_k <- function(){ # draw k integers from domain D
+  T_k <- rep(0,k) # initialize global T_k
+  T_k[1] <- xlb
+  T_k[k] <- xub
   for (i in 2:(k-1)){
-    T_k[i] <- T_k[i-1] + (vec[2]-vec[1])/(k-1)
+    T_k[i] <- T_k[i-1] + (xub-xlb)/(k-1)
   }
   return(T_k)
 }
+T_k <- compute_T_k() # update global variable T_k
 
-T_k <- compute_T_k(k) # update global variable T_k
-h_x <- sapply(T_k, func) # function evaluated at T_k
-h_prime_x <- 0
-for (i in 1:length(h_x)){  # derivatives evaluated at T_k
-  h_prime_x[i] <- unlist(attributes(func(T_k[i])))
+###### function evaluated at T_k  ######  
+h_func <- function(T_k, h){
+  return(sapply(T_k, h))
 }
+h_k <- h_func(T_k, h) # function evaluated at T_k
 
-# z coordinates #
-z <- rep (0, k-1) # tangent line intersections
-for (i in 1:k-1){
-  z[i] <- (h_x[i+1]-h_x[i]-T_k[i+1]*h_prime_x[i+1]+T_k[i]*h_prime_x[i])/(h_prime_x[i]-h_prime_x[i+1])
+###### h derivative  ######  
+grad <- function(T_k,h){
+  h_k_prime <- 0
+  for (i in 1:length(T_k)){  # derivatives evaluated at T_k
+    h_k_prime[i] <- unlist(attributes(h(T_k[i])))
+  }
+  return(h_k_prime)
 }
+h_k_prime <- grad(T_k, h)
 
-# upper bound #
+###### z_k coordinates ######  
+compute_z_k <- function(T_k,h_k,h_k_prime){  # tangent line intersections
+  z_k <- rep (0, k-1)
+  for (i in 1:k-1){
+    z_k[i] <- (h_k[i+1]-h_k[i]-T_k[i+1]*h_k_prime[i+1]+T_k[i]*h_k_prime[i])/(h_k_prime[i]-h_k_prime[i+1])
+  }
+  return(z_k)
+}
+z_k <- compute_z_k(T_k,h_k,h_k_prime)
+
+###### upper bound ######  
 # returns a function u_x(x)
-# If we want u_x(x) evaluated at x*, call u_x(x*)(x*)
-u_x <- function(x) {
-  if ((T_k[1] <= x) && (x < z[1])){
-    return function(x) (h_x[1] + (x-T_k[1])*h_prime_x[1])
+# If we want u_x(x) evaluated at x*, call u_x(h_k,h_k_prime,z_k,T_k)(x)
+# Note: not u_x(x*)(x*)
+compute_u_k <- function(h_k,h_k_prime,z_k,T_k,x) {
+  if ((T_k[1] <= x) && (x < z_k[1])){
+    return (function(x) (h_k[1] + (x-T_k[1])*h_k_prime[1]))
   }
   for (i in 1:(length(T_k)-2)){
-    if(z[i] <= x && x < z[i+1]){
-      return function(x) (h_x[i+1] + (x-T_k[i+1])*h_prime_x[i+1])
+    if(z_k[i] <= x && x < z_k[i+1]){
+      return (function(x) (h_k[i+1] + (x-T_k[i+1])*h_k_prime[i+1]))
     }
   }
-  if ((z[k-1] <= x) && (x <= T_k[k])){
-    return function(x) (h_x[k] + (x-T_k[k])*h_prime_x[k])
+  if ((z_k[k-1] <= x) && (x <= T_k[k])){
+    return (function(x) (h_k[k] + (x-T_k[k])*h_k_prime[k]))
   }
 }
+compute_u_k(h_k,h_k_prime,z_k,T_k,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
 
-# S_k transformation where x sampled from u_x #
-### Need a function for calculating area under u_x(x)
-S_k <- function(x) {
-  area <- 0 
-  area <- area + (z[1]-T_k[1])*(u_x(z[1])(z[1])+h(T_k[1])[1])/2
-  area <- area + (T_k[k]-z[k-1])*(u_x(z[k-1])(z[k-1])+h(T_k[k])[1])/2
-  for (i in 1:(length(T_k)-2)){
-    area <- area + (z[i+1]-z[i])*(u_x(z[i])(z[i])+u_x(z[i])(z[i]))/2
-  }
-  return(exp(u_x(x)(x))/area)
-}
-
-# lower bound #
-l_k <- function(x) {
+###### lower bound ######  
+compute_l_k <- function(T_k,h_k,x) {
   for (i in 1:(length(T_k)-1)){
     if(T_k[i] <= x && x < T_k[i+1]){
-      return(((T_k[i+1]-x)*h_x[i]+(x-T_k[i])*h_x[i+1])/(T_k[i+1]-T_k[i]))
+      return(function(x) ((T_k[i+1]-x)*h_k[i]+(x-T_k[i])*h_k[i+1])/(T_k[i+1]-T_k[i]))
     }
   }
   if (x == T_k[i+1]){
-    return(((T_k[k]-x)*h_x[k-1]+(x-T_k[k-1])*h_x[k])/(T_k[k]-T_k[k-1]))
+    return(function(x) ((T_k[k]-x)*h_k[k-1]+(x-T_k[k-1])*h_k[k])/(T_k[k]-T_k[k-1]))
+  }
+}
+compute_l_k(T_k,h_k,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
+
+
+###### S_k transformation where x sampled from s_x ######  
+### Need a function for calculating area under s_x(x)
+
+### Function A computes area of trapezoid indexed between i-1 and i in z_k
+A <- function(i, h_k, h_k_prime, z_k, T_k){ 
+  composite<-function(f,g) function(...) f(g(...))
+  f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,T_k[i])(x) # evaluate u_k at x using the T_k[i] segment 
+  g<-function(x) exp(x)
+  exp_u_k <- composite(g,f)
+  
+  if (i==1){
+    return (integrate(exp_u_k,T_k[1],z_k[1])$value)
+  }
+  else if (i==length(T_k)){
+    return (integrate(exp_u_k,z_k[length(z_k)],T_k[length(T_k)])$value)
+  }
+  else{
+    return (integrate(exp_u_k,z_k[i-1],z_k[i])$value)
   }
 }
 
-### Edward's DRAFT functions END ###
+###### A_k vector of trapezoid area ###### 
+A_k <- 0
+for (i in 1:length(T_k)){
+  A_k[i] <- A(i,h_k, h_k_prime, z_k, T_k)
+}
+
+### S_k returns a function specified in the slides
+S_k <- function(x, h_k, h_k_prime, z_k, T_k) {
+  A_k <- 0
+  for (i in 1:length(T_k)){
+    A_k[i] <- A(i,h_k, h_k_prime, z_k, T_k)
+  } 
+  
+  composite<-function(f,g) function(...) f(g(...))
+  f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,x)(x)
+  g<-function(x) exp(x)/sum(A_k)
+  return(composite(g,f))
+}
+S_k(.5, h_k, h_k_prime, z_k, T_k)(.5) # S_k valued at .5
+
+#################### Edward's 2nd DRAFT functions ENDs #################### 
 
 
 compute_z_k <- function(T_k) { #Zixiao
