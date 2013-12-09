@@ -167,8 +167,8 @@ A_k <- 0
 for (i in 1:length(T_k)){
   A_k[i] <- A(i,h_k, h_k_prime, z_k, T_k)
 }
-## cumulative area, starting from zero
-cumArea<-c(0,cumsum(A_k))
+## cumulative area, normalized
+cumArea<-cumsum(A_k/sum(A_k))
 
 ### S_k returns a function specified in the slides
 S_k <- function(x, h_k, h_k_prime, z_k, T_k, A_k) { 
@@ -208,12 +208,15 @@ cdf_u<-function(xj,hprimej,cumAreaj,temp,h_k, h_k_prime, z_k, T_k, A_k){ #CREATE
 sample_val <- function(T_k,cumArea,h_k_prime,z_k,...) {  #Cindy
   # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
   temp<-runif(1)
-  # x_star between T_k[1], T_k[k]
+  k<-length(T_k)
   for (i in 1:(k-1)){
-    if(temp<cumArea[2]){
+    if(temp<cumArea[1]){
       x_star<-uniroot(cdf_u(T_k[1],h_k_prime[1],cumArea[1],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =T_k[1], upper =z[1])[1]
       break
-    }else if(temp>=cumArea[i] && temp<cumArea[i+1]){
+    }else if(temp>=cumArea[k-1]){
+      x_star<-uniroot(cdf_u(T_k[k],h_k_prime[k],cumArea[k],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =z[k-1], upper =T_k[k])[1]
+      break
+    }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
       x_star<-uniroot(cdf_u(T_k[i],h_k_prime[i],cumArea[i],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =z[i-1], upper =z[i])[1]
       break
     }
