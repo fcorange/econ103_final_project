@@ -246,8 +246,8 @@ sample_val <- function(data,cumArea) {  #Cindy
   })
 }
 
-squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) { #Cind
-    test<-exp(l_star-u_star)
+squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) { #Cindy
+    test<-exp(l_xstar-u_xstar)
     Boolean<-ifelse(u_star<=test,T,F)
     # T=accept, F=reject
     ### QUESTION: also do we need to evaluate h(x*) and h'(x*) here?
