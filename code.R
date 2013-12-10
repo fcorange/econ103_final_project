@@ -27,7 +27,7 @@ ARS<-function(k,g,n,xlb,xub){
   u_k <- compute_u_k(D,T_k)(T_k)                  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
 
   
-  l_k <- compute_l_k(T_k, h_k)                    # Obtain the lower bound on T_k
+  l_k <- compute_l_k(T_k,h_k,T_k)(T_k)                    # Obtain the lower bound on T_k
 
   for (i in 1:length(T_k)) {                    
     A_k[i] <- A(i, D)
@@ -40,12 +40,16 @@ ARS<-function(k,g,n,xlb,xub){
   # Sampling
   while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
     sample_point <- sample_val(D,cumArea)
-    squeeze <- squeeze_test(sample_point)
+    x_star<-sample_point[1]
+    l_xstar<-compute_l_k(T_k,h_k,x_star)(x_star)
+    u_xstar<-compute_u_k(data,x_star)(x_star)
+    squeeze <- squeeze_test(sample_point,l_xstar,u_xstar)
     if (squeeze == F){
-      reject <- rejection_test(sample_point)
+      h_xstar <- h(x_star) 
+      reject <- rejection_test(sample_point,u_xstar,h_xstar)
     }
     if((squeeze == T) || (reject == T)){
-      sample <- c(sample, sample_point[1])
+      sample <- c(sample, x_star)
     }
     
     ##### Make sure to update the dataframe: D[nrow(D)+1,]<-c(x*,h(x*),...) #########
@@ -242,19 +246,21 @@ sample_val <- function(data,cumArea) {  #Cindy
   })
 }
 
-squeeze_test <- function(x_star, u_star) { #Cindy
-  test<-exp(l_k(x_star)-u_x(x_star)(x_star))
+squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) { #Cind
+    test<-exp(l_star-u_star)
+    Boolean<-ifelse(u_star<=test,T,F)
+    # T=accept, F=reject
+    ### QUESTION: also do we need to evaluate h(x*) and h'(x*) here?
+    return(Boolean)
+}
+
+rejection_test <- funcion(x_star, u_star,u_xstar,h_xstar) { #Cindy 
+  test<-exp(h_xstar-u_xstar)
   Boolean<-ifelse(u_star<=test,T,F)
-  # T=accept, F=reject
-  ### QUESTION: Why do we need to evaluate h(x*) and h'(x*) here?
   return(Boolean)
 }
 
-rejection_test <- funcion(x_star, u_star) { #Cindy 
-  test<-exp(h(x_star)-u_x(x_star)(x_star))
-  Boolean<-ifelse(u_star<=test,T,F)
-  return(Boolean)
-}
+rejection_test(sample_point,u_xstar,h_xstar)
 
 # ---- Function to check if the upper and lower bounds are not actually bounding the density, i.e. the log-concavity is violated
 check_concave <- function(u_x, l_k) {
