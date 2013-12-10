@@ -17,18 +17,27 @@ ARS<-function(k,g,n,xlb,xub){
   T_k <- compute_T_k()                            # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
   h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
-  z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k+1 elements)
-  u_k <- compute_u_k(h_k, h_k_prime,z_k,T_k)(T_k) # Obtain the upper bound on T_k. Note that compute_u_k gives a function
+  z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k-1 elements)
+  z_k <- c(z_k,tail(T_k,n=1))
+  A_k <- vector(0,length=k)            #initialize area
+  ## data frame
+  D<-data.frame(T_k,h_k,h_k_prime,z_k,A_k)
+  names(D)<-c("T_k","h_k","h_k_prime","z_k","A_k")
+  # u_k now takes in the data frame as an input
+  u_k <- compute_u_k(D,T_k)(T_k)     # Obtain the upper bound on T_k. Note that compute_u_k gives a function
   l_k <- compute_l_k(T_k, h_k)                    # Obtain the lower bound on T_k
-  A_k <- vector()                                 # Initilize the areas
+
   for (i in 1:length(T_k)) {                    
-    A_k[i] <- A(i, h_k, h_k_prime, z_k, T_k)
+    A_k[i] <- A(i, D)
   }
+  D$A_k<-A_k
   cumArea <- cumsum(A_k/sum(A_k))                 # Cumulative area
+  
+  
   
   # Sampling
   while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
-    sample_point <- sample_val()
+    sample_point <- sample_val(D,cumArea)
     squeeze <- squeeze_test(sample_point)
     if (squeeze == F){
       reject <- rejection_test(sample_point)
@@ -36,6 +45,8 @@ ARS<-function(k,g,n,xlb,xub){
     if((squeeze == T) || (reject == T)){
       sample <- c(sample, sample_point[1])
     }
+    
+    ##### Make sure to update the dataframe: D[nrow(D)+1,]<-c(x*,h(x*),...) #########
     
     # Updating
     if (squeeze==F){
@@ -99,7 +110,7 @@ grad <- function(T_k,h){
 h_k_prime <- grad(T_k, h)
 
 ###### z_k coordinates ######  
-compute_z_k <- function(T_k,h_k,h_k_prime){  # tangent line intersections
+compute_z_k <- function(T_k, h_k, h_k_prime){  # tangent line intersections
   z_k <- rep (0, k-1)
   for (i in 1:k-1){
     z_k[i] <- (h_k[i+1]-h_k[i]-T_k[i+1]*h_k_prime[i+1]+T_k[i]*h_k_prime[i])/(h_k_prime[i]-h_k_prime[i+1])
@@ -112,20 +123,22 @@ z_k <- compute_z_k(T_k,h_k,h_k_prime)
 # returns a function u_x(x)
 # If we want u_x(x) evaluated at x*, call u_x(h_k,h_k_prime,z_k,T_k)(x)
 # Note: not u_x(x*)(x*)
-compute_u_k <- function(h_k,h_k_prime,z_k,T_k,x) {
-  if ((T_k[1] <= x) && (x < z_k[1])){
-    return (function(x) (h_k[1] + (x-T_k[1])*h_k_prime[1]))
-  }
-  for (i in 1:(length(T_k)-2)){
-    if(z_k[i] <= x && x < z_k[i+1]){
-      return (function(x) (h_k[i+1] + (x-T_k[i+1])*h_k_prime[i+1]))
+compute_u_k <- function(data,x) {
+  with(data,{
+    if ((T_k[1] <= x) && (x < z_k[1])){
+      return (function(x) (h_k[1] + (x-T_k[1])*h_k_prime[1]))
     }
-  }
-  if ((z_k[k-1] <= x) && (x <= T_k[k])){
-    return (function(x) (h_k[k] + (x-T_k[k])*h_k_prime[k]))
-  }
+    for (i in 1:(length(T_k)-2)){
+      if(z_k[i] <= x && x < z_k[i+1]){
+        return (function(x) (h_k[i+1] + (x-T_k[i+1])*h_k_prime[i+1]))
+      }
+    }
+    if ((z_k[k-1] <= x) && (x <= T_k[k])){
+      return (function(x) (h_k[k] + (x-T_k[k])*h_k_prime[k]))
+    }
+  })
 }
-compute_u_k(h_k,h_k_prime,z_k,T_k,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
+compute_u_k(D,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
 
 ###### lower bound ######  
 compute_l_k <- function(T_k,h_k,x) {
@@ -145,39 +158,42 @@ compute_l_k(T_k,h_k,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evalua
 ### Need a function for calculating area under s_x(x)
 
 ### Function A computes area of trapezoid indexed between i-1 and i in z_k
-A <- function(i, h_k, h_k_prime, z_k, T_k){ 
-  composite<-function(f,g) function(...) f(g(...))
-  f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,T_k[i])(x) # evaluate u_k at x using the T_k[i] segment 
-  g<-function(x) exp(x)
-  exp_u_k <- composite(g,f)
+A <- function(i, data){ 
+  with(data,{
+    composite<-function(f,g) function(...) f(g(...))
+    f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,T_k[i])(x) # evaluate u_k at x using the T_k[i] segment 
+    g<-function(x) exp(x)
+    exp_u_k <- composite(g,f)
   
-  if (i==1){
-    return (integrate(exp_u_k,T_k[1],z_k[1])$value)
-  }
-  else if (i==length(T_k)){
-    return (integrate(exp_u_k,z_k[length(z_k)],T_k[length(T_k)])$value)
-  }
-  else{
-    return (integrate(exp_u_k,z_k[i-1],z_k[i])$value)
-  }
+    if (i==1){
+      return (integrate(exp_u_k,T_k[1],z_k[1])$value)
+    }
+    else if (i==length(T_k)){
+      return (integrate(exp_u_k,z_k[length(z_k)],T_k[length(T_k)])$value)
+    }
+    else{
+      return (integrate(exp_u_k,z_k[i-1],z_k[i])$value)
+    }
+  })
 }
 
 ###### A_k vector of trapezoid area ###### 
-A_k <- 0
 for (i in 1:length(T_k)){
-  A_k[i] <- A(i,h_k, h_k_prime, z_k, T_k)
+  A_k[i] <- A(i,D)
 }
 ## cumulative area, normalized
 cumArea<-cumsum(A_k/sum(A_k))
 
 ### S_k returns a function specified in the slides
-S_k <- function(x, h_k, h_k_prime, z_k, T_k, A_k) { 
-  composite<-function(f,g) function(...) f(g(...))
-  f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,x)(x)
-  g<-function(x) exp(x)/sum(A_k)
-  return(composite(g,f))
+S_k <- function(x, data) { 
+  with(data,{
+    composite<-function(f,g) function(...) f(g(...))
+    f<-function(x) compute_u_k(h_k,h_k_prime,z_k,T_k,x)(x)
+    g<-function(x) exp(x)/sum(A_k)
+    return(composite(g,f))
+  })
 }
-S_k(.5, h_k, h_k_prime, z_k, T_k, A_k)(.5) # S_k valued at .5
+S_k(.5, D)(.5) # S_k valued at .5
 
 #################### Edward's 2nd DRAFT functions ENDs #################### 
 
@@ -188,42 +204,40 @@ compute_z_k <- function(T_k) { #Zixiao
     z_k(i) <- (h(T_k[i+1]) - h(T_k[i]) - T_k[i+1] * grad(h, T_k[i+1]) + T_k[i] * grad(h, T_k[i])) / (grad(h, T_k[i]) - grad(h, T_k[i+1]))
   }
   z_k[1] <- T_k[1]
-  z_k[(length(T_k))+1] <- tail(T_k)
+  z_k[(length(T_k))+1] <- tail(T_k,n=1)
   return(z_k)
 }
 
 ### Cindy's DRAFT functions ###
 
-# s_k(x) gives me the function
-# s_k(x)(x) gives me the value evaluated at x
-
 # Axillary function
-cdf_u<-function(xj,hprimej,cumAreaj,temp,h_k, h_k_prime, z_k, T_k, A_k){ #CREATE A DATAFRAME??
+cdf_u<-function(xj,hprimej,cumAreaj,temp,data){ #CREATE A DATAFRAME??
   # 1/b*s_k(x)
-  cdf<-1/hprimej*S_k(xj,h_k, h_k_prime, z_k, T_k, A_k)
-  return function(x) cdf+cumAreaj-temp
+  with(data,{
+    cdf<-1/hprimej*S_k(xj,data)
+    return function(x) cdf+cumAreaj-temp
+  })
 }
 
 
-sample_val <- function(T_k,cumArea,h_k_prime,z_k,...) {  #Cindy
-  # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
-  temp<-runif(1)
-  k<-length(T_k)
-  for (i in 1:(k-1)){
-    if(temp<cumArea[1]){
-      x_star<-uniroot(cdf_u(T_k[1],h_k_prime[1],cumArea[1],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =T_k[1], upper =z[1])[1]
-      break
-    }else if(temp>=cumArea[k-1]){
-      x_star<-uniroot(cdf_u(T_k[k],h_k_prime[k],cumArea[k],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =z[k-1], upper =T_k[k])[1]
-      break
-    }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
-      x_star<-uniroot(cdf_u(T_k[i],h_k_prime[i],cumArea[i],temp,h_k, h_k_prime, z_k, T_k, A_k), lower =z[i-1], upper =z[i])[1]
-      break
+sample_val <- function(data,cumArea) {  #Cindy
+  with(data, {
+    # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
+    temp<-runif(1)
+    k<-length(T_k)
+    for (i in 1:(k-1)){
+      if(temp<cumArea[1]){
+        x_star<-uniroot(cdf_u(T_k[1],h_k_prime[1],cumArea[1],temp,data), lower =T_k[1], upper =z_k[1])[1]
+        break
+      }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
+        x_star<-uniroot(cdf_u(T_k[i],h_k_prime[i],cumArea[i],temp,data), lower =z_k[i-1], upper =z_k[i])[1]
+        break
+      }
     }
-  }
-  # sample u* from uniform(0,1)
-  u_star<-runif(1)
-  return(c(x_star, u_star))
+    # sample u* from uniform(0,1)
+    u_star<-runif(1)
+    return(c(x_star, u_star))
+  })
 }
 
 squeeze_test <- function(x_star, u_star) { #Cindy
