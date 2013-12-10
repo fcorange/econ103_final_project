@@ -18,7 +18,6 @@ ARS<-function(k,g,n,xlb,xub){
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
   h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
   z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k-1 elements)
-<<<<<<< HEAD
   z_k <- c(z_k,tail(T_k,n=1))
   A_k <- vector(0,length=k)            #initialize area
   ## data frame
@@ -26,15 +25,15 @@ ARS<-function(k,g,n,xlb,xub){
   names(D)<-c("T_k","h_k","h_k_prime","z_k","A_k")
   # u_k now takes in the data frame as an input
   u_k <- compute_u_k(D,T_k)(T_k)     # Obtain the upper bound on T_k. Note that compute_u_k gives a function
-=======
+
   u_k <- compute_u_k(h_k, h_k_prime,z_k,T_k)(T_k) # Obtain the upper bound on T_k. Note that compute_u_k gives a function
->>>>>>> 44cca4fcf0b1e4aa3222c5934eeed0373ad64e74
+
   l_k <- compute_l_k(T_k, h_k)                    # Obtain the lower bound on T_k
 
   for (i in 1:length(T_k)) {                    
     A_k[i] <- A(i, D)
   }
-  D$A_k<-A_k
+  D$A_k<-A_k  # update A_k in data frame
   cumArea <- cumsum(A_k/sum(A_k))                 # Cumulative area
   
   
