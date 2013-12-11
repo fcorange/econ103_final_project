@@ -21,18 +21,18 @@ ARS<-function(k,g,n,xlb,xub){
   z_k <- c(z_k,tail(T_k,n=1))
   A_k <- vector(0,length=k)                       # Initialize the vector of area
   # Create a data frame
-  mat<-data.frame(T_k,h_k,h_k_prime,z_k,A_k)
-  names(mat) <- c("T_k","h_k","h_k_prime","z_k","A_k")
+  data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
+  names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
   # u_k now takes in the data frame as an input
-  u_k <- compute_u_k(D,T_k)(T_k)                  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
+  u_k <- compute_u_k(data,T_k)(T_k)                  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
 
   
   l_k <- compute_l_k(T_k,h_k,T_k)(T_k)                    # Obtain the lower bound on T_k
 
   for (i in 1:length(T_k)) {                    
-    A_k[i] <- A(i, D)
+    A_k[i] <- A(i, data)
   }
-  D$A_k <- A_k  # update A_k in data frame
+  data$A_k <- A_k  # update A_k in data frame
   cumArea <- cumsum(A_k/sum(A_k))                 # Cumulative area
   
   
@@ -266,16 +266,16 @@ check_concave <- function(u_x, l_k) {
   return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
 }
 
-update <- function(x_star, D, u_k, l_k) { #Zixiao
-  D$T_k <- sort(append(D$T_k, x_star))
-  position <- (which(D$T_k == x_star) - 1)
-  D$h_k <- append(D$h_k, compute_h_k(x_star, h), after = position)
-  D$h_k_prime <- append(D$h_k_prime, grad(h, x_star), after = position)
-  D$z_k <- compute_z_k(D$T_k, D$h_k, D$h_k_prime)
-  u_k <- append(u_k, compute_u_k(D,x_star)(x_star), after = position)
-  l_k <- append(l_k, compute_l_k(D$T_k,D$h_k,x_star)(x_star), after = position)
-  D$A_k <- append(D$A_k, A(position+1, D), after = position)
-  D$A_k[position+2] <- A(position+2, D)
+update <- function(x_star, data, u_k, l_k) { #Zixiao
+  data$T_k <- sort(append(data$T_k, x_star))
+  position <- (which(data$T_k == x_star) - 1)
+  data$h_k <- append(data$h_k, compute_h_k(x_star, h), after = position)
+  data$h_k_prime <- append(data$h_k_prime, grad(h, x_star), after = position)
+  data$z_k <- compute_z_k(data$T_k, data$h_k, data$h_k_prime)
+  u_k <- append(u_k, compute_u_k(data,x_star)(x_star), after = position)
+  l_k <- append(l_k, compute_l_k(data$T_k,data$h_k,x_star)(x_star), after = position)
+  data$A_k <- append(data$A_k, A(position+1, data), after = position)
+  data$A_k[position+2] <- A(position+2, data)
   cumArea <- cumsun(A_k/sum(A_k))
 } 
 
