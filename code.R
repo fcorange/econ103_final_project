@@ -21,8 +21,8 @@ ARS<-function(k,g,n,xlb,xub){
   z_k <- c(z_k,tail(T_k,n=1))
   A_k <- vector(0,length=k)                       # Initialize the vector of area
   # Create a data frame
-  D < -data.frame(T_k,h_k,h_k_prime,z_k,A_k)
-  names(D) <- c("T_k","h_k","h_k_prime","z_k","A_k")
+  mat<-data.frame(T_k,h_k,h_k_prime,z_k,A_k)
+  names(mat) <- c("T_k","h_k","h_k_prime","z_k","A_k")
   # u_k now takes in the data frame as an input
   u_k <- compute_u_k(D,T_k)(T_k)                  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
 
@@ -43,10 +43,10 @@ ARS<-function(k,g,n,xlb,xub){
     x_star<-sample_point[1]
     l_xstar<-compute_l_k(T_k,h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
-    squeeze <- squeeze_test(sample_point,l_xstar,u_xstar)
+    squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
     if (squeeze == F){
       h_xstar <- h(x_star) 
-      reject <- rejection_test(sample_point,u_xstar,h_xstar)
+      reject <- rejection_test(sample_point[1],sample_point[2],u_xstar,h_xstar)
     }
     if((squeeze == T) || (reject == T)){
       sample <- c(sample, x_star)
@@ -217,11 +217,11 @@ compute_z_k2 <- function(T_k) { #Zixiao
 ### Cindy's DRAFT functions ###
 
 # Axillary function
-cdf_u<-function(xj,hprimej,cumAreaj,temp,data){ #CREATE A DATAFRAME??
+cdf_u<-function(xj,hprimej,cumAreaj,temp,data){
   # 1/b*s_k(x)
   with(data,{
     cdf<-1/hprimej*S_k(xj,data)
-    return function(x) cdf+cumAreaj-temp
+    return(function(x) cdf+cumAreaj-temp)
   })
 }
 
@@ -231,7 +231,7 @@ sample_val <- function(data,cumArea) {  #Cindy
     # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
     temp<-runif(1)
     k<-length(T_k)
-    for (i in 1:(k-1)){
+    for (i in 1:k){
       if(temp<cumArea[1]){
         x_star<-uniroot(cdf_u(T_k[1],h_k_prime[1],cumArea[1],temp,data), lower =T_k[1], upper =z_k[1])[1]
         break
@@ -254,13 +254,12 @@ squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) { #Cindy
     return(Boolean)
 }
 
-rejection_test <- funcion(x_star, u_star,u_xstar,h_xstar) { #Cindy 
+rejection_test <-function(x_star, u_star,u_xstar,h_xstar) { #Cindy 
   test<-exp(h_xstar-u_xstar)
   Boolean<-ifelse(u_star<=test,T,F)
   return(Boolean)
 }
 
-rejection_test(sample_point,u_xstar,h_xstar)
 
 # ---- Function to check if the upper and lower bounds are not actually bounding the density, i.e. the log-concavity is violated
 check_concave <- function(u_x, l_k) {
