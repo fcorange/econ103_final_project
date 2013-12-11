@@ -8,6 +8,13 @@ xub   # Upper bound of domain
 # ---- Library for calculating derivatives
 library("numDeriv")
 
+xval <- seq(-1,1,0.001)
+
+plot(xval, h(xval), pch=".",ylim=c(-2,0))
+points(T_k, h(T_k))
+u_z<-compute_u_k(data,T_k)(T_k) 
+points(z_k, u_k)
+
 
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
@@ -19,7 +26,7 @@ ARS<-function(k,g,n,xlb,xub){
   h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
   z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k-1 elements)
   z_k <- c(z_k,tail(T_k,n=1))
-  A_k <- vector(0,length=k)                       # Initialize the vector of area
+  A_k <- rep(0,length=k)                       # Initialize the vector of area
   # Create a data frame
   data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
   names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
@@ -33,13 +40,13 @@ ARS<-function(k,g,n,xlb,xub){
     A_k[i] <- A(i, data)
   }
   data$A_k <- A_k  # update A_k in data frame
-  cumArea <- cumsum(A_k/sum(A_k))                 # Cumulative area
+  cumArea <- cumsum(data$A_k/sum(data$A_k))                 # Cumulative area
   
   
   
   # Sampling
   while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
-    sample_point <- sample_val(D,cumArea)
+    sample_point <- sample_val(data,cumArea)
     x_star<-sample_point[1]
     l_xstar<-compute_l_k(T_k,h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
@@ -52,11 +59,11 @@ ARS<-function(k,g,n,xlb,xub){
       sample <- c(sample, x_star)
     }
     
-    ##### Make sure to update the dataframe: D[nrow(D)+1,]<-c(x*,h(x*),...) #########
+    ##### Make sure to update the dataframe #########
     
     # Updating
     if (squeeze==F){
-      update(sample_point[1], T_k, h_k, h_k_prime, z_k, u_k, l_k)
+      update(sample_point[1], data, u_k, l_k)
     }
   }
   return(sample)
@@ -70,7 +77,7 @@ ARS<-function(k,g,n,xlb,xub){
 ## Caution: Inputs are assumed reasonable ##
 ## Also, function must be defined s.t. mode is in D ##
 
-k<-20
+k<-10
 xlb <- -1 # lowerbound
 xub <- 1 # upperbound
 n<-100
@@ -105,7 +112,7 @@ compute_h_k <- function(T_k, h){
 }
 h_k <- compute_h_k(T_k, h) # function evaluated at T_k
 
-###### h derivative  ######  
+###### h derivative  ######  (we don't need this function any more)
 grad <- function(T_k,h){
   h_k_prime <- 0
   for (i in 1:length(T_k)){  # derivatives evaluated at T_k
@@ -206,8 +213,8 @@ S_k(.5, D)(.5) # S_k valued at .5
 
 compute_z_k2 <- function(T_k) { #Zixiao
   z_k <- vector()
-  for (i in 2:(length(T_k)) {
-    z_k(i) <- (h(T_k[i+1]) - h(T_k[i]) - T_k[i+1] * grad(h, T_k[i+1]) + T_k[i] * grad(h, T_k[i])) / (grad(h, T_k[i]) - grad(h, T_k[i+1]))
+  for (i in 2:(length(T_k))) {
+    z_k[i] <- (h(T_k[i+1]) - h(T_k[i]) - T_k[i+1] * grad(h, T_k[i+1]) + T_k[i] * grad(h, T_k[i])) / (grad(h, T_k[i]) - grad(h, T_k[i+1]))
   }
   z_k[1] <- T_k[1]
   z_k[(length(T_k))+1] <- tail(T_k,n=1)
@@ -276,7 +283,7 @@ update <- function(x_star, data, u_k, l_k) { #Zixiao
   l_k <- append(l_k, compute_l_k(data$T_k,data$h_k,x_star)(x_star), after = position)
   data$A_k <- append(data$A_k, A(position+1, data), after = position)
   data$A_k[position+2] <- A(position+2, data)
-  cumArea <- cumsun(A_k/sum(A_k))
+  cumArea <- cumsun(data$A_k/sum(data$A_k))
 } 
 
 check_input <- function(k,g,n,xlb,xub) {
