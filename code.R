@@ -94,6 +94,15 @@ log <- function(x) log(x);
 h <- composite(log, g)
 body(h) <- deriv(body(h), "x")
 
+######  checking Inf ######  
+mode <- optim(0,g, upper=xub, lower =xlb, control=list(fnscale=-1))[1]
+if (xub == Inf){
+  xub <- mode + 10 # arbitary number bounds mode if D specified unbounded
+}
+if (xlb == -Inf){
+  xlb <- mode - 10
+}
+
 ######  evenly initialize  find T_k in D ######  
 compute_T_k <- function(){ # draw k integers from domain D
   T_k <- rep(0,k) # initialize global T_k
