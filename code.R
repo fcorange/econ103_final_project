@@ -97,8 +97,8 @@ ARS<-function(k,g,n,xlb,xub){
 ## Also, function must be defined s.t. mode is in D ##
 
 k<-10
-xlb <- -1 # lowerbound
-xub <- 1 # upperbound
+xlb <- -Inf # lowerbound
+xub <- Inf # upperbound
 n<-100
 
 ######  define g ######  
@@ -108,10 +108,22 @@ g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standa
 # h <- function(x)  exp(x)/((1+exp(x))^2) # given function as standard normal
 
 ######  log g = h ######  
-composite <- function(f,g) function(...) f(g(...))
-log <- function(x) log(x);
-h <- composite(log, g)
-body(h) <- deriv(body(h), "x")
+composite<-function(f,g) function(...) f(g(...))
+f <- function(x) log(x);
+h <- composite(f, g)
+
+##body(h) <- deriv(body(h), "x", func = TRUE)
+##(g) <- deriv(body(g), "x")
+##h(1)
+
+######  checking Inf ######  
+mode <- optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
+if (xub == Inf){
+  xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
+}
+if (xlb == -Inf){
+  xlb <- mode$par - 10
+}
 
 ######  evenly initialize  find T_k in D ######  
 compute_T_k <- function(){ # draw k integers from domain D
@@ -132,19 +144,21 @@ compute_h_k <- function(T_k, h){
 h_k <- compute_h_k(T_k, h) # function evaluated at T_k
 
 ###### h derivative  ######  (we don't need this function any more)
-grad <- function(T_k,h){
+install.packages("numDeriv")
+gradient <- function(T_k,h){
+  library(numDeriv)
   h_k_prime <- 0
   for (i in 1:length(T_k)){  # derivatives evaluated at T_k
-    h_k_prime[i] <- unlist(attributes(h(T_k[i])))
+    h_k_prime[i] <- grad(h,T_k[i])
   }
   return(h_k_prime)
 }
-h_k_prime <- grad(T_k, h)
+h_k_prime <- gradient(T_k, h)
 
 ###### z_k coordinates ######  
 compute_z_k <- function(T_k, h_k, h_k_prime){  # tangent line intersections
-  z_k <- rep (0, length(T_k)-1)
-  for (i in 1:(length(T_k)-1)){
+  z_k <- rep (0, k-1)
+  for (i in 1:k-1){
     z_k[i] <- (h_k[i+1]-h_k[i]-T_k[i+1]*h_k_prime[i+1]+T_k[i]*h_k_prime[i])/(h_k_prime[i]-h_k_prime[i+1])
   }
   return(z_k)
@@ -170,7 +184,7 @@ compute_u_k <- function(data,x) {
     }
   })
 }
-compute_u_k(D,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
+compute_u_k(data,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
 
 ###### lower bound ######  
 compute_l_k <- function(T_k,h_k,x) {
