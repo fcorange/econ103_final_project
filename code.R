@@ -25,11 +25,20 @@ for (i in 1:length(T_k)){
 }
 points(z_k, u_z)
 
+g<-function(x) x^2*exp(-x/2)
 
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(k,g,n,xlb,xub){
   # Initialization
   h <- function(x) (return(log(g(x))))            # Function h = log(g)
+  mode <- optim(0,g, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
+  if (xub == Inf){
+    xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
+  }
+  if (xlb == -Inf){
+    xlb <- mode$par - 10
+  }
+  print(c(mode,xlb,xub))
   sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
   T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
@@ -57,15 +66,14 @@ ARS<-function(k,g,n,xlb,xub){
   for (i in 1:length(T_k)) {                    
     A_k[i] <- A(i, data)
   }
-  data$A_k <- A_k/sum(A_k)  # update A_k in data frame
-  cumArea <- cumsum(data$A_k)                 # Cumulative area
+  data$A_k <- A_k  # update A_k in data frame
   
   
   
   # Sampling
-  while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
+  while(length(sample) < n) { # While sample size n is ont reached, keep sample & update
+    cumArea <- cumsum(data$A_k)    # Cumulative area
     sample_point <- sample_val(data,cumArea)
-    #print(sample_point[1])
     x_star<-sample_point[1]
     l_xstar<-compute_l_k(data$T_k,data$h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
@@ -76,7 +84,7 @@ ARS<-function(k,g,n,xlb,xub){
       reject <- rejection_test(sample_point[1],sample_point[2],u_xstar,h_xstar)
       if(reject == T){
         sample <- c(sample, x_star)
-      }#else{print(x_star)}
+      }
     }else{
       sample <- c(sample, x_star)
     }
@@ -87,10 +95,9 @@ ARS<-function(k,g,n,xlb,xub){
     # Updating
     if (squeeze==F){
       data<-update(sample_point[1], data, u_k, l_k,h)
-      cumArea <- cumsum(data$A_k)
     }
   }
-  #print(data$T_k)
+ 
   return(sample)
 }
 ######
@@ -109,6 +116,10 @@ n<-100
 
 ######  define g ######  
 g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
+g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
+g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
+g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)
+g<-function(x) (1/768)*x^4*exp(-x/2)
 # h <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given function as standard normal
 # body(h) <- deriv(body(h), "x")
 # h <- function(x)  exp(x)/((1+exp(x))^2) # given function as standard normal
@@ -242,35 +253,26 @@ compute_z_k2 <- function(T_k) { #Zixiao
 sample_val <- function(data,cumArea) {  #Cindy
   with(data, {
     # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
-    temp<-runif(1)
+    temp<-runif(1)*sum(A_k)
     k<-length(T_k)
     for (i in 1:k){
       a<-h_k_prime[i]
       b<-h_k[i]-T_k[i]*a
-      if(i==1){
-        if (temp<cumArea[1]) {
-          x_star<-(log(exp(a*T_k[1]+b)+temp*sum(A_k)*a)-b)/a
+      if(i==1 && temp<cumArea[1]){
+        x_star<-(log(exp(a*T_k[1]+b)+temp*sum(A_k)*a)-b)/a
+        break
+      }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
+        if (a==0){
+          x_star<-(temp-cumArea[i-1])*sum(A_k)/exp(b)+z_k[i-1]
           break
-          #x_star<-uniroot(cdf_s_k(T_k[1],h_k_prime[1],0,temp,data), lower =T_k[1], upper =z_k[1])[1]
-          #break
         }
-      }
-      else {
-        if((temp>=cumArea[i-1]) && (temp<cumArea[i])){
-          if (a==0){
-            x_star<-(temp-cumArea[i-1])*sum(A_k)/exp(b)+z_k[i-1]
-            break
-          }
-          else {
-            x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*sum(A_k)*a)-b)/a
-            break
-          }  
-        }
+        
+        x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*sum(A_k)*a)-b)/a
+        break
       }
     }
     # sample u* from uniform(0,1)
     u_star<-runif(1)
-    #print(c(x_star, u_star))
     return(c(x_star, u_star))
   })
 }
@@ -298,20 +300,19 @@ update <- function(x_star, data, u_k, l_k,h) { #Zixiao
   with(data,{
     T_k <- sort(append(data$T_k, x_star))
     position <- (which(T_k == x_star) - 1)
-    #print(position)
     h_k <- append(data$h_k, compute_h_k(x_star, h), after = position)
     h_k_prime <- append(data$h_k_prime, grad(h, x_star), after = position)
     z_k <- compute_z_k(T_k, h_k, h_k_prime)
     z_k <- c(z_k,tail(T_k,n=1))
     #u_k <- append(u_k, compute_u_k(data,x_star)(x_star), after = position)
     #l_k <- append(l_k, compute_l_k(data$T_k,data$h_k,x_star)(x_star), after = position)
-    A_k <- append(A_k, 0, after = position)
+    A_k <- rep(0,length=length(T_k))
     data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
-    data$A_k<-data$A_k*sum(data$A_k)
-    data$A_k[position+1] <- A(position+1, data)
-    data$A_k[position+2] <- A(position+2, data)
-    data$A_k<-data$A_k/sum(data$A_k)
-    #cumArea <- cumsum(data$A_k)
+    for (i in 1:length(T_k)) {                    
+      A_k[i] <- A(i, data)
+    }
+    data$A_k <- A_k
+    
     return(data)
   })
 } 
