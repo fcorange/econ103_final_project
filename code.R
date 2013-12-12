@@ -201,7 +201,7 @@ ARS<-function(g,n,xlb,xub){
   if (xlb == -Inf){
     xlb <- mode$par - 10
   }
-
+  
   sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
   T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
@@ -231,13 +231,13 @@ ARS<-function(g,n,xlb,xub){
   }
   data$A_k <- A_k # update A_k in data frame
   
-    
+  
   ## Sampling
   while(length(sample) < n) { # While sample size n is ont reached, keep sample & update
     cumArea <- cumsum(data$A_k)    # Cumulative area
     sample_point <- sample_val(data,cumArea)
     x_star<-sample_point[1]
-
+    
     l_xstar<-compute_l_k(data$T_k,data$h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
     squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
@@ -257,8 +257,8 @@ ARS<-function(g,n,xlb,xub){
       data<-update(sample_point[1], data, u_k, l_k,h)
       # Check concavity
       if (check_concave(data,h)==FALSE) {
-        print("Input function not concave!")
-        break
+        warning("Input function not concave!")
+        return()
       }
     }
   }
@@ -282,6 +282,7 @@ g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
 samp04<-ARS(g,n=20000,xlb=.01,xub=.99)
 g<-function(x) x^4*exp(-x) #unnormalized gamma
 sample05<-ARS(g,n=20000,xlb=.01,xub=Inf)
+g <- function(x) 2*(((2*pi)^-0.5)*exp(-(x-4)^2/2)) + (((2*pi)^-0.5)*exp(-(x)^2/2)) #non log-concave example
 
 ## Bad lower bound and upper bound input test ##
 g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
