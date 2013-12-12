@@ -237,6 +237,7 @@ compute_z_k2 <- function(T_k) { #Zixiao
 
 ### Cindy's DRAFT functions ###
 
+
 sample_val <- function(data,cumArea) {  #Cindy
   with(data, {
     # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
@@ -246,22 +247,29 @@ sample_val <- function(data,cumArea) {  #Cindy
       a<-h_k_prime[i]
       b<-h_k[i]-T_k[i]*a
       if(i==1){
-        x_star<-(log(exp(a*T_k[1]+b)+temp*sum(A_k)*a)-b)/a
-        #x_star<-uniroot(cdf_s_k(T_k[1],h_k_prime[1],0,temp,data), lower =T_k[1], upper =z_k[1])[1]
-        break
-      }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
-        if (a==0){
-          x_star<-(temp-cumArea[i-1])*sum(A_k)/exp(b)+z_k[i-1]
+        if (temp<cumArea[1]) {
+          x_star<-(log(exp(a*T_k[1]+b)+temp*sum(A_k)*a)-b)/a
           break
+          #x_star<-uniroot(cdf_s_k(T_k[1],h_k_prime[1],0,temp,data), lower =T_k[1], upper =z_k[1])[1]
+          #break
         }
-        x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*sum(A_k)*a)-b)/a
-        #x_star<-uniroot(cdf_s_k(T_k[1],h_k_prime[1],cumArea[i-1],temp,data), lower =z_k[i-1], upper =z_k[i])[1]
-        break
+      }
+      else {
+        if((temp>=cumArea[i-1]) && (temp<cumArea[i])){
+          if (a==0){
+            x_star<-(temp-cumArea[i-1])*sum(A_k)/exp(b)+z_k[i-1]
+            break
+          }
+          else {
+            x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*sum(A_k)*a)-b)/a
+            break
+          }  
+        }
       }
     }
     # sample u* from uniform(0,1)
     u_star<-runif(1)
-    print(c(x_star, u_star))
+    #print(c(x_star, u_star))
     return(c(x_star, u_star))
   })
 }
