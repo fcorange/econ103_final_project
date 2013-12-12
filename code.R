@@ -31,12 +31,12 @@ ARS<-function(k,g,n,xlb,xub){
   # Initialization
   h <- function(x) (return(log(g(x))))            # Function h = log(g)
   sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
-  T_k <- compute_T_k(k,xlb,xub)                            # Initialize the evenly spaced x points on domain D
+  T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
   h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
   z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k-1 elements)
   z_k <- c(z_k,tail(T_k,n=1))
-  A_k <- rep(0,length=k)                       # Initialize the vector of area
+  A_k <- rep(0,length=k)                          # Initialize the vector of area
   # Create a data frame
   data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
   names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
