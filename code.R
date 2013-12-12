@@ -117,8 +117,20 @@ rejection_test <-function(x_star, u_star,u_xstar,h_xstar) { #Cindy
 
 
 # ---- Function to check if the upper and lower bounds are not actually bounding the density, i.e. the log-concavity is violated
-check_concave <- function(u_k, l_k) {
-  return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
+check_concave <- function(data,h) {
+  sample_points <- vector()
+  for (i in 1:(length(data$T_k)-1)) {
+    sample_points[i] <- mean(c(data$T_k[i],data$T_k[i+1]))
+  }
+  u_k <- vector()
+  for (i in 1:length(sample_points)){
+    u_k[i]<-compute_u_k(data,sample_points[i])(sample_points[i])
+  } 
+  l_k <- vector()
+  for (i in 1:length(sample_points)){
+    l_k[i]<-compute_l_k(data$T_k,data$h_k,sample_points[i])(sample_points[i])
+  }
+  return(sum((sum(u_k < h(sample_points))==0) + (sum(l_k > h(sample_points))==0)) == 2)
 }
 
 update <- function(x_star, data, u_k, l_k,h) { #Zixiao
@@ -243,6 +255,11 @@ ARS<-function(g,n,xlb,xub){
     # Updating
     if (squeeze==F){
       data<-update(sample_point[1], data, u_k, l_k,h)
+      # Check concavity
+      if (check_concave(data,h)==FALSE) {
+        print("Input function not concave!")
+        break
+      }
     }
   }
   hist(sample)
