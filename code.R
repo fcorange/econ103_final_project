@@ -64,14 +64,12 @@ ARS<-function(k,g,n,xlb,xub){
   
   # Sampling
   while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
-    while (squeeze==T){
     sample_point <- sample_val(data,cumArea)
     x_star<-sample_point[1]
     l_xstar<-compute_l_k(T_k,h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
     squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
-    print(squeeze)
-  }
+    
     if (squeeze == F){
       h_xstar <- h(x_star) 
       reject <- rejection_test(sample_point[1],sample_point[2],u_xstar,h_xstar)
