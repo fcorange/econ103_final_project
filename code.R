@@ -43,39 +43,40 @@ ARS<-function(k,g,n,xlb,xub){
   # u_k now takes in the data frame as an input
   #u_k <- vector()
   #for (i in 1:length(T_k)){
-    #u_k[i]<-compute_u_k(data,T_k[i])(T_k[i])
+  #u_k[i]<-compute_u_k(data,T_k[i])(T_k[i])
   #}
   # Obtain the upper bound on T_k. Note that compute_u_k gives a function
-
+  
   
   #l_k <- vector()
   #for (i in 1:length(T_k)){
-    #l_k[i]<-compute_l_k(T_k,h_k,T_k[i])(T_k[i])
+  #l_k[i]<-compute_l_k(T_k,h_k,T_k[i])(T_k[i])
   #}
   # Obtain the lower bound on T_k
-
+  
   for (i in 1:length(T_k)) {                    
     A_k[i] <- A(i, data)
   }
   data$A_k <- A_k/sum(A_k)  # update A_k in data frame
   cumArea <- cumsum(data$A_k)                 # Cumulative area
-
+  
   
   
   # Sampling
   while(length(sample) < n) {             # While sample size n is ont reached, keep sample & update
     sample_point <- sample_val(data,cumArea)
+    #print(sample_point[1])
     x_star<-sample_point[1]
     l_xstar<-compute_l_k(data$T_k,data$h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
     squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
-
+    
     if (squeeze == F){
       h_xstar <- h(x_star) 
       reject <- rejection_test(sample_point[1],sample_point[2],u_xstar,h_xstar)
       if(reject == T){
         sample <- c(sample, x_star)
-      }else{print(x_star)}
+      }#else{print(x_star)}
     }else{
       sample <- c(sample, x_star)
     }
@@ -85,10 +86,11 @@ ARS<-function(k,g,n,xlb,xub){
     
     # Updating
     if (squeeze==F){
-      data<-update(sample_point[1], data, u_k, l_k, h)
+      data<-update(sample_point[1], data, u_k, l_k,h)
+      cumArea <- cumsum(data$A_k)
     }
   }
-  print(data$T_k)
+  #print(data$T_k)
   return(sample)
 }
 ######
@@ -237,7 +239,6 @@ compute_z_k2 <- function(T_k) { #Zixiao
 
 ### Cindy's DRAFT functions ###
 
-
 sample_val <- function(data,cumArea) {  #Cindy
   with(data, {
     # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
@@ -275,10 +276,10 @@ sample_val <- function(data,cumArea) {  #Cindy
 }
 
 squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) { #Cindy
-    test<-exp(l_xstar-u_xstar)
-    Boolean<-ifelse(u_star<=test,T,F)
-    # T=accept, F=reject
-    return(Boolean)
+  test<-exp(l_xstar-u_xstar)
+  Boolean<-ifelse(u_star<=test,T,F)
+  # T=accept, F=reject
+  return(Boolean)
 }
 
 rejection_test <-function(x_star, u_star,u_xstar,h_xstar) { #Cindy 
@@ -293,11 +294,11 @@ check_concave <- function(u_k, l_k) {
   return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
 }
 
-update <- function(x_star, data, u_k, l_k, h) { #Zixiao
+update <- function(x_star, data, u_k, l_k,h) { #Zixiao
   with(data,{
     T_k <- sort(append(data$T_k, x_star))
     position <- (which(T_k == x_star) - 1)
-    print(position)
+    #print(position)
     h_k <- append(data$h_k, compute_h_k(x_star, h), after = position)
     h_k_prime <- append(data$h_k_prime, grad(h, x_star), after = position)
     z_k <- compute_z_k(T_k, h_k, h_k_prime)
@@ -310,7 +311,7 @@ update <- function(x_star, data, u_k, l_k, h) { #Zixiao
     data$A_k[position+1] <- A(position+1, data)
     data$A_k[position+2] <- A(position+2, data)
     data$A_k<-data$A_k/sum(data$A_k)
-    cumArea <- cumsum(data$A_k)
+    #cumArea <- cumsum(data$A_k)
     return(data)
   })
 } 
