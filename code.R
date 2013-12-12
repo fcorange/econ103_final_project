@@ -151,31 +151,18 @@ update <- function(x_star, data, u_k, l_k,h) {
   })
 } 
 
-check_input <- function(k,g,n,xlb,xub) {
-  if ((k<=0)||(k%%1!=0)) {
-    print("Number of points to sample must be a positive integer")
-    return(FALSE)
+check_input <- function(g,n,xlb,xub) {
+  if ((n<5)||(n%%1!=0)) {
+      warning("Sample size must be a bigger integer")
+      return()
+    }
+  if(xlb>=xub) {
+      warning ("Lower bound must be smaller than the upper bound")
+      return()
   }
-  else {
-    if ((n<=0)||(n%%1!=0)) {
-      print("Sample size must be a positive integer")
-      return(FALSE)
-    }
-    else {
-      if (xlb>=xub) {
-        print("Lower bound of domain must be smaller than upper bound")
-        return(FALSE)
-      }
-      else {
-        if (typeof(g)!="closure") {
-          print("Input density is not a function")
-          return(FALSE)
-        }
-        else {
-          return(TRUE)
-        }
-      }
-    }
+  if (typeof(g)!="closure") {
+      warning("Input density is not a function")
+      return()
   }
 }
 
@@ -184,6 +171,7 @@ check_input <- function(k,g,n,xlb,xub) {
 ### OUR PARENT FUNCTION ARS() ###
 ars<-function(g,n,xlb,xub){
   library("numDeriv")
+  check_input(g,n,xlb,xub)
   # Initialization
   k<-5
   h <- function(x) (return(log(g(x))))            # Function h = log(g)
@@ -249,36 +237,57 @@ ars<-function(g,n,xlb,xub){
       }
     }
   }
-  hist(sample)
+  hist(sample,main="")
   return(sample)
 }
 ######
 
-test(){
-######  define g ######  
-g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function is standard normal
-samp01<-ars(g,n=20000,xlb=-Inf,xub=Inf)
-g <- function(x)   exp(-(x-3)^2/2) #unnormalized normal w/ mean 3
-samp001<-ars(g,n=20000,xlb=-1,xub=Inf)
-g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
-samp02<-ars(g,n=20000,xlb=.01,xub=Inf)
-g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
-samp03<-ars(g,n=20000,xlb=.01,xub=Inf)
-g<-function(x) x^2*exp(-x/2) #unnormalized gamma(3,2)
-samp003<-ars(g,n=20000,xlb=.01,xub=Inf)
-g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
-samp04<-ars(g,n=20000,xlb=.01,xub=.99)
-g<-function(x) x^4*exp(-x) #unnormalized gamma
-
-## Non log-concave example ##
-g <- function(x) 2*(((2*pi)^-0.5)*exp(-(x-4)^2/2)) + (((2*pi)^-0.5)*exp(-(x)^2/2)) 
-sample05<-ars(g,n=20000,xlb=.01,xub=Inf)
-
-## Bad lower bound and upper bound input test ##
-g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
-samp04d<-ars(g,n=20000,xlb=-1,xub=1)
-
-## Given density is uniform ##
-g<-function(x) 1
-sampu<-ars(g,n=20000,xlb=-1,xub=1)
+test<-function(){
+  ######  define g ######  
+  print("Testing on a standard normal density.")
+  g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function is standard normal
+  samp01<-ars(g,n=20000,xlb=-Inf,xub=Inf)
+  title(main="Sampling from a Standard Normal")
+  summary(samp01)
+  print("Testing on a standard normal kernel with mean=3.")
+  g <- function(x)   exp(-(x-3)^2/2) #unnormalized normal w/ mean 3
+  samp001<-ars(g,n=20000,xlb=-1,xub=Inf)
+  title(main="Sampling from a Normal mean=3")
+  summary(samp001)
+  print("Testing on a gamma(2,2) density.")
+  g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
+  samp02<-ars(g,n=20000,xlb=.01,xub=Inf)
+  title(main="Sampling from a gamma density.")
+  summary(samp02)
+  print("Testing on an unmormalized gamma kernel.")
+  g<-function(x) x^2*exp(-x/2) #unnormalized gamma(3,2)
+  samp003<-ars(g,n=20000,xlb=.01,xub=Inf)
+  title(main="Sampling from an unmormalized gamma kernel.")
+  summary(samp003)
+  print("Testing on a beta(2,2) kernel.")
+  g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
+  samp04<-ars(g,n=20000,xlb=.01,xub=.99)
+  title(main="Sampling from a beta(2,2) kernel.")
+  summary(samp04)
+  
+  ## Non log-concave example ##
+  print("Testing on a kernel/density that is not log concave.")
+  g <- function(x) 2*(((2*pi)^-0.5)*exp(-(x-4)^2/2)) + (((2*pi)^-0.5)*exp(-(x)^2/2)) 
+  sample05<-ars(g,n=20000,xlb=.01,xub=Inf)
+  
+  ## Bad lower bound and upper bound input test ##
+  print("Testing on undefined domain of a kernel/density: beta with xlb and xub out of range.")
+  g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
+  samp04d<-ars(g,n=20000,xlb=-1,xub=1)
+  
+  ## Given density is uniform ##
+  print("Testing on a uniform kernel/density.")
+  g<-function(x) 1
+  sampu<-ars(g,n=20000,xlb=-1,xub=1)
+  
+  ## Bad input ##
+  print("Testing on bad input: n not postive integer.")
+  g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
+  samp04d<-ars(g,n=2.5,xlb=-1,xub=1)
 }
+
