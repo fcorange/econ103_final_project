@@ -85,7 +85,7 @@ ARS<-function(k,g,n,xlb,xub){
     
     # Updating
     if (squeeze==F){
-      data<-update(sample_point[1], data, u_k, l_k)
+      data<-update(sample_point[1], data, u_k, l_k, h)
     }
   }
   print(data$T_k)
@@ -285,7 +285,7 @@ check_concave <- function(u_k, l_k) {
   return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
 }
 
-update <- function(x_star, data, u_k, l_k) { #Zixiao
+update <- function(x_star, data, u_k, l_k, h) { #Zixiao
   with(data,{
     T_k <- sort(append(data$T_k, x_star))
     position <- (which(T_k == x_star) - 1)
