@@ -29,8 +29,7 @@ compute_z_k <- function(T_k, h_k, h_k_prime){  # tangent line intersections
 
 ###### upper bound ######  
 # returns a function u_x(x)
-# If we want u_x(x) evaluated at x*, call u_x(h_k,h_k_prime,z_k,T_k)(x)
-# Note: not u_x(x*)(x*)
+# If we want u_x(x) evaluated at x*, call u_x(data,T_k)(x)
 compute_u_k <- function(data,x) {
   with(data,{
     if ((T_k[1] <= x) && (x < z_k[1])){
@@ -76,7 +75,7 @@ A <- function(i, data){
 
 
 
-sample_val <- function(data,cumArea) {  #Cindy
+sample_val <- function(data,cumArea) {
   with(data, {
     # sample x*: CDF(x*)=temp-cumArea
     temp<-runif(1)*sum(A_k)
@@ -102,14 +101,14 @@ sample_val <- function(data,cumArea) {  #Cindy
   })
 }
 
-squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) { #Cindy
+squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) {
   test<-exp(l_xstar-u_xstar)
   Boolean<-ifelse(u_star<=test,T,F)
   # T=accept, F=reject
   return(Boolean)
 }
 
-rejection_test <-function(x_star, u_star,u_xstar,h_xstar) { #Cindy 
+rejection_test <-function(x_star, u_star,u_xstar,h_xstar) {
   test<-exp(h_xstar-u_xstar)
   Boolean<-ifelse(u_star<=test,T,F)
   return(Boolean)
@@ -133,7 +132,7 @@ check_concave <- function(data,h) {
   return(sum((sum(u_k < h(sample_points))==0) + (sum(l_k > h(sample_points))==0)) == 2)
 }
 
-update <- function(x_star, data, u_k, l_k,h) { #Zixiao
+update <- function(x_star, data, u_k, l_k,h) { 
   with(data,{
     T_k <- sort(append(data$T_k, x_star))
     position <- (which(T_k == x_star) - 1)
@@ -141,8 +140,6 @@ update <- function(x_star, data, u_k, l_k,h) { #Zixiao
     h_k_prime <- append(data$h_k_prime, grad(h, x_star), after = position)
     z_k <- compute_z_k(T_k, h_k, h_k_prime)
     z_k <- c(z_k,tail(T_k,n=1))
-    #u_k <- append(u_k, compute_u_k(data,x_star)(x_star), after = position)
-    #l_k <- append(l_k, compute_l_k(data$T_k,data$h_k,x_star)(x_star), after = position)
     A_k <- rep(0,length=length(T_k))
     data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
     for (i in 1:length(T_k)) {                    
@@ -185,7 +182,7 @@ check_input <- function(k,g,n,xlb,xub) {
 
 
 ### OUR PARENT FUNCTION ARS() ###
-ARS<-function(g,n,xlb,xub){
+ars<-function(g,n,xlb,xub){
   library("numDeriv")
   # Initialization
   k<-5
@@ -212,20 +209,10 @@ ARS<-function(g,n,xlb,xub){
   # Create a data frame
   data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
   names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
-  # u_k now takes in the data frame as an input
-  #u_k <- vector()
-  #for (i in 1:length(T_k)){
-  #u_k[i]<-compute_u_k(data,T_k[i])(T_k[i])
-  #}
-  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
-  
-  
-  #l_k <- vector()
-  #for (i in 1:length(T_k)){
-  #l_k[i]<-compute_l_k(T_k,h_k,T_k[i])(T_k[i])
-  #}
-  # Obtain the lower bound on T_k
-  
+  if(any(is.na(z_k))){
+    warning("Your kernel is uniform, please sample with runif() instead.")
+    return()
+  }
   for (i in 1:length(T_k)) {                    
     A_k[i] <- A(i, data)
   }
@@ -267,23 +254,31 @@ ARS<-function(g,n,xlb,xub){
 }
 ######
 
+test(){
 ######  define g ######  
-g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
-samp01<-ARS(g,n=20000,xlb=-Inf,xub=Inf)
-g <- function(x)   exp(-(x-3)^2/2) #unnormalized normalw/ mean 3
-samp001<-ARS(g,n=20000,xlb=-1,xub=Inf)
+g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function is standard normal
+samp01<-ars(g,n=20000,xlb=-Inf,xub=Inf)
+g <- function(x)   exp(-(x-3)^2/2) #unnormalized normal w/ mean 3
+samp001<-ars(g,n=20000,xlb=-1,xub=Inf)
 g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
-samp02<-ARS(g,n=20000,xlb=.01,xub=Inf)
+samp02<-ars(g,n=20000,xlb=.01,xub=Inf)
 g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
-samp03<-ARS(g,n=20000,xlb=.01,xub=Inf)
+samp03<-ars(g,n=20000,xlb=.01,xub=Inf)
 g<-function(x) x^2*exp(-x/2) #unnormalized gamma(3,2)
-samp003<-ARS(g,n=20000,xlb=.01,xub=Inf)
+samp003<-ars(g,n=20000,xlb=.01,xub=Inf)
 g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
-samp04<-ARS(g,n=20000,xlb=.01,xub=.99)
+samp04<-ars(g,n=20000,xlb=.01,xub=.99)
 g<-function(x) x^4*exp(-x) #unnormalized gamma
-sample05<-ARS(g,n=20000,xlb=.01,xub=Inf)
-g <- function(x) 2*(((2*pi)^-0.5)*exp(-(x-4)^2/2)) + (((2*pi)^-0.5)*exp(-(x)^2/2)) #non log-concave example
+
+## Non log-concave example ##
+g <- function(x) 2*(((2*pi)^-0.5)*exp(-(x-4)^2/2)) + (((2*pi)^-0.5)*exp(-(x)^2/2)) 
+sample05<-ars(g,n=20000,xlb=.01,xub=Inf)
 
 ## Bad lower bound and upper bound input test ##
 g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
-samp04d<-ARS(g,n=20000,xlb=-1,xub=1)
+samp04d<-ars(g,n=20000,xlb=-1,xub=1)
+
+## Given density is uniform ##
+g<-function(x) 1
+sampu<-ars(g,n=20000,xlb=-1,xub=1)
+}
