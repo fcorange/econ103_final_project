@@ -1,100 +1,3 @@
-
-### OUR PARENT FUNCTION ARS() ###
-ARS<-function(g,n,xlb,xub){
-  # Initialization
-  library("numDeriv")
-  k<-5
-  h <- function(x) (return(log(g(x))))            # Function h = log(g)
-  mode <- optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
-  if (xub == Inf){
-    xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
-  }
-  if (xlb == -Inf){
-    xlb <- mode$par - 10
-  }
-
-  sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
-  T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
-  h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
-  h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
-  z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k-1 elements)
-  z_k <- c(z_k,tail(T_k,n=1))
-  A_k <- rep(0,length=k)                          # Initialize the vector of area
-  # Create a data frame
-  data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
-  names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
-  # u_k now takes in the data frame as an input
-  #u_k <- vector()
-  #for (i in 1:length(T_k)){
-  #u_k[i]<-compute_u_k(data,T_k[i])(T_k[i])
-  #}
-  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
-  
-  
-  #l_k <- vector()
-  #for (i in 1:length(T_k)){
-  #l_k[i]<-compute_l_k(T_k,h_k,T_k[i])(T_k[i])
-  #}
-  # Obtain the lower bound on T_k
-  
-  for (i in 1:length(T_k)) {                    
-    A_k[i] <- A(i, data)
-  }
-  data$A_k <- A_k # update A_k in data frame
-  
-    
-  ## Sampling
-  while(length(sample) < n) { # While sample size n is ont reached, keep sample & update
-    cumArea <- cumsum(data$A_k)    # Cumulative area
-    sample_point <- sample_val(data,cumArea)
-    x_star<-sample_point[1]
-
-    l_xstar<-compute_l_k(data$T_k,data$h_k,x_star)(x_star)
-    u_xstar<-compute_u_k(data,x_star)(x_star)
-    squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
-    
-    if (squeeze == F){
-      h_xstar <- h(x_star) 
-      reject <- rejection_test(sample_point[1],sample_point[2],u_xstar,h_xstar)
-      if(reject == T){
-        sample <- c(sample, x_star)
-      }
-    }else{
-      sample <- c(sample, x_star)
-    }
-    
-    # Updating
-    if (squeeze==F){
-      data<-update(sample_point[1], data, u_k, l_k,h)
-    }
-  }
-  hist(sample)
-  return(sample)
-}
-######
-
-
-
-
-
-######  define g ######  
-g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
-samp01<-ARS(g,n=20000,xlb=-Inf,xub=Inf)
-g <- function(x)   exp(-(x-3)^2/2) #unnormalized normalw/ mean 3
-samp001<-ARS(g,n=20000,xlb=-1,xub=Inf)
-g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
-samp02<-ARS(g,n=20000,xlb=.01,xub=Inf)
-g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
-samp03<-ARS(g,n=20000,xlb=.01,xub=Inf)
-g<-function(x) x^2*exp(-x/2) #unnormalized gamma(3,2)
-samp003<-ARS(g,n=20000,xlb=.01,xub=Inf)
-g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
-samp04<-ARS(g,n=20000,xlb=.01,xub=.99)
-g<-function(x) x^4*exp(-x) #unnormalized gamma
-sample05<-ARS(g,n=20000,xlb=.01,xub=Inf)
-
-
-
 ######  evenly initialize  find T_k in D ######  
 compute_T_k <- function(k,xlb,xub){ # draw k integers from domain D
   T_k <- rep(0,k) # initialize global T_k
@@ -266,3 +169,103 @@ check_input <- function(k,g,n,xlb,xub) {
     }
   }
 }
+
+
+
+### OUR PARENT FUNCTION ARS() ###
+ARS<-function(g,n,xlb,xub){
+  library("numDeriv")
+  # Initialization
+  k<-5
+  h <- function(x) (return(log(g(x))))            # Function h = log(g)
+  mode <- try(optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1],silent=T)
+  if (class(mode)=="try-error"){
+    warning("The given kernel/density is not defined on the domain specified, please change xlb/xub.")
+    return()
+  }
+  if (xub == Inf){
+    xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
+  }
+  if (xlb == -Inf){
+    xlb <- mode$par - 10
+  }
+
+  sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
+  T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
+  h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
+  h_k_prime <- grad(h, T_k)                       # Obtain the derivative of h evaluated at T_k
+  z_k <- compute_z_k(T_k, h_k, h_k_prime)         # Obtain the intersections of tangent lines (k-1 elements)
+  z_k <- c(z_k,tail(T_k,n=1))
+  A_k <- rep(0,length=k)                          # Initialize the vector of area
+  # Create a data frame
+  data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
+  names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
+  # u_k now takes in the data frame as an input
+  #u_k <- vector()
+  #for (i in 1:length(T_k)){
+  #u_k[i]<-compute_u_k(data,T_k[i])(T_k[i])
+  #}
+  # Obtain the upper bound on T_k. Note that compute_u_k gives a function
+  
+  
+  #l_k <- vector()
+  #for (i in 1:length(T_k)){
+  #l_k[i]<-compute_l_k(T_k,h_k,T_k[i])(T_k[i])
+  #}
+  # Obtain the lower bound on T_k
+  
+  for (i in 1:length(T_k)) {                    
+    A_k[i] <- A(i, data)
+  }
+  data$A_k <- A_k # update A_k in data frame
+  
+    
+  ## Sampling
+  while(length(sample) < n) { # While sample size n is ont reached, keep sample & update
+    cumArea <- cumsum(data$A_k)    # Cumulative area
+    sample_point <- sample_val(data,cumArea)
+    x_star<-sample_point[1]
+
+    l_xstar<-compute_l_k(data$T_k,data$h_k,x_star)(x_star)
+    u_xstar<-compute_u_k(data,x_star)(x_star)
+    squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
+    
+    if (squeeze == F){
+      h_xstar <- h(x_star) 
+      reject <- rejection_test(sample_point[1],sample_point[2],u_xstar,h_xstar)
+      if(reject == T){
+        sample <- c(sample, x_star)
+      }
+    }else{
+      sample <- c(sample, x_star)
+    }
+    
+    # Updating
+    if (squeeze==F){
+      data<-update(sample_point[1], data, u_k, l_k,h)
+    }
+  }
+  hist(sample)
+  return(sample)
+}
+######
+
+######  define g ######  
+g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
+samp01<-ARS(g,n=20000,xlb=-Inf,xub=Inf)
+g <- function(x)   exp(-(x-3)^2/2) #unnormalized normalw/ mean 3
+samp001<-ARS(g,n=20000,xlb=-1,xub=Inf)
+g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
+samp02<-ARS(g,n=20000,xlb=.01,xub=Inf)
+g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
+samp03<-ARS(g,n=20000,xlb=.01,xub=Inf)
+g<-function(x) x^2*exp(-x/2) #unnormalized gamma(3,2)
+samp003<-ARS(g,n=20000,xlb=.01,xub=Inf)
+g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
+samp04<-ARS(g,n=20000,xlb=.01,xub=.99)
+g<-function(x) x^4*exp(-x) #unnormalized gamma
+sample05<-ARS(g,n=20000,xlb=.01,xub=Inf)
+
+## Bad lower bound and upper bound input test ##
+g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
+samp04d<-ARS(g,n=20000,xlb=-1,xub=1)
