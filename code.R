@@ -1,46 +1,18 @@
-# ---- User inputs
-k     # Number of points to sample from the user
-g     # Density (can be unnormalized)
-n     # Sample size desired
-xlb   # Lower bound of domain
-xub   # Upper bound of domain
-
-# ---- Library for calculating derivatives
-library("numDeriv")
-
-xval <- seq(-1,1,0.001)
-
-plot(xval, h(xval), pch=".")
-lines(xval, u_z)
-lines(xval,l_z)
-u_z <- vector()
-l_z <- vector()
-for (i in 1:length(xval)){
-  u_z[i]<-compute_u_k(data,xval[i])(xval[i])
-  l_z[i]<-compute_l_k(T_k,h_k,xval[i])(xval[i])
-}
-
-for (i in 1:length(T_k)){
-  
-}
-points(z_k, u_z)
-
-g<-function(x) x^2*exp(-x/2)
 
 ### OUR PARENT FUNCTION ARS() ###
 ARS<-function(g,n,xlb,xub){
-  library("numDeriv")
-  k=5
   # Initialization
+  library("numDeriv")
+  k<-5
   h <- function(x) (return(log(g(x))))            # Function h = log(g)
-  mode <- optim(0,g, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
+  mode <- optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
   if (xub == Inf){
     xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
   }
   if (xlb == -Inf){
     xlb <- mode$par - 10
   }
-  print(mode)
+
   sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
   T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
@@ -68,15 +40,15 @@ ARS<-function(g,n,xlb,xub){
   for (i in 1:length(T_k)) {                    
     A_k[i] <- A(i, data)
   }
-  data$A_k <- A_k  # update A_k in data frame
+  data$A_k <- A_k # update A_k in data frame
   
-  
-  
-  # Sampling
+    
+  ## Sampling
   while(length(sample) < n) { # While sample size n is ont reached, keep sample & update
     cumArea <- cumsum(data$A_k)    # Cumulative area
     sample_point <- sample_val(data,cumArea)
     x_star<-sample_point[1]
+
     l_xstar<-compute_l_k(data$T_k,data$h_k,x_star)(x_star)
     u_xstar<-compute_u_k(data,x_star)(x_star)
     squeeze <- squeeze_test(sample_point[1],sample_point[2],l_xstar,u_xstar)
@@ -91,58 +63,37 @@ ARS<-function(g,n,xlb,xub){
       sample <- c(sample, x_star)
     }
     
-    
-    ##### Make sure to update the dataframe #########
-    
     # Updating
     if (squeeze==F){
-      data<-update(sample_point[1], data,h)
+      data<-update(sample_point[1], data, u_k, l_k,h)
     }
   }
- 
+  hist(sample)
   return(sample)
 }
 ######
 
 
 
-#################### Edward's 2nd DRAFT functions STARTs #################### 
 
-## Caution: Inputs are assumed reasonable ##
-## Also, function must be defined s.t. mode is in D ##
-
-k<-10
-xlb <- -Inf # lowerbound
-xub <- Inf # upperbound
-n<-100
 
 ######  define g ######  
 g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
+samp01<-ARS(g,n=20000,xlb=-Inf,xub=Inf)
+g <- function(x)   exp(-(x-3)^2/2) #unnormalized normalw/ mean 3
+samp001<-ARS(g,n=20000,xlb=-1,xub=Inf)
 g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
+samp02<-ARS(g,n=20000,xlb=.01,xub=Inf)
 g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
+samp03<-ARS(g,n=20000,xlb=.01,xub=Inf)
+g<-function(x) x^2*exp(-x/2) #unnormalized gamma(3,2)
+samp003<-ARS(g,n=20000,xlb=.01,xub=Inf)
 g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
-g<-function(x) (1/768)*x^4*exp(-x/2)
-# h <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given function as standard normal
-# body(h) <- deriv(body(h), "x")
-# h <- function(x)  exp(x)/((1+exp(x))^2) # given function as standard normal
+samp04<-ARS(g,n=20000,xlb=.01,xub=.99)
+g<-function(x) x^4*exp(-x) #unnormalized gamma
+sample05<-ARS(g,n=20000,xlb=.01,xub=Inf)
 
-######  log g = h ######  
-composite<-function(f,g) function(...) f(g(...))
-f <- function(x) log(x);
-h <- composite(f, g)
 
-##body(h) <- deriv(body(h), "x", func = TRUE)
-##(g) <- deriv(body(g), "x")
-##h(1)
-
-######  checking Inf ######  
-mode <- optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
-if (xub == Inf){
-  xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
-}
-if (xlb == -Inf){
-  xlb <- mode$par - 10
-}
 
 ######  evenly initialize  find T_k in D ######  
 compute_T_k <- function(k,xlb,xub){ # draw k integers from domain D
@@ -154,25 +105,14 @@ compute_T_k <- function(k,xlb,xub){ # draw k integers from domain D
   }
   return(T_k)
 }
-T_k <- compute_T_k() # update global variable T_k
+
 
 ###### function evaluated at T_k  ######  
 compute_h_k <- function(T_k, h){
   return(h(T_k))
 }
-h_k <- compute_h_k(T_k, h) # function evaluated at T_k
 
-###### h derivative  ######  (we don't need this function any more)
-install.packages("numDeriv")
-gradient <- function(T_k,h){
-  library(numDeriv)
-  h_k_prime <- 0b 
-  for (i in 1:length(T_k)){  # derivatives evaluated at T_k
-    h_k_prime[i] <- grad(h,T_k[i])
-  }
-  return(h_k_prime)
-}
-h_k_prime <- gradient(T_k, h)
+
 
 ###### z_k coordinates ######  
 compute_z_k <- function(T_k, h_k, h_k_prime){  # tangent line intersections
@@ -182,7 +122,7 @@ compute_z_k <- function(T_k, h_k, h_k_prime){  # tangent line intersections
   }
   return(z_k)
 }
-z_k <- compute_z_k(T_k,h_k,h_k_prime)
+
 
 ###### upper bound ######  
 # returns a function u_x(x)
@@ -203,7 +143,6 @@ compute_u_k <- function(data,x) {
     }
   })
 }
-compute_u_k(data,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
 
 ###### lower bound ######  
 compute_l_k <- function(T_k,h_k,x) {
@@ -215,13 +154,9 @@ compute_l_k <- function(T_k,h_k,x) {
   if (x == T_k[length(T_k)]){
     return(function(x) ((T_k[length(T_k)]-x)*h_k[length(T_k)-1]+(x-T_k[length(T_k)-1])*h_k[length(T_k)])/(T_k[length(T_k)]-T_k[length(T_k)-1]))  }
 }
-compute_l_k(T_k,h_k,1)(1) # 1st 1 used in if statements, 2nd 1 used as an evaluation point
 
 
-###### S_k transformation where x sampled from s_x ######  
-### Need a function for calculating area under s_x(x)
-
-### Function A computes area of trapezoid indexed between i-1 and i in z_k
+### Function A computes area between i-1 and i in z_k
 A <- function(i, data){ 
   with(data,{
     a<-h_k_prime[i]
@@ -237,39 +172,24 @@ A <- function(i, data){
 }   
 
 
-#################### Edward's 2nd DRAFT functions ENDs #################### 
-
-
-compute_z_k2 <- function(T_k) { #Zixiao
-  z_k <- vector()
-  for (i in 2:(length(T_k))) {
-    z_k[i] <- (h(T_k[i+1]) - h(T_k[i]) - T_k[i+1] * grad(h, T_k[i+1]) + T_k[i] * grad(h, T_k[i])) / (grad(h, T_k[i]) - grad(h, T_k[i+1]))
-  }
-  z_k[1] <- T_k[1]
-  z_k[(length(T_k))+1] <- tail(T_k,n=1)
-  return(z_k)
-}
-
-### Cindy's DRAFT functions ###
 
 sample_val <- function(data,cumArea) {  #Cindy
   with(data, {
-    # sample x* with p(x) = Uk(x); CDF(x*)=temp_u
+    # sample x*: CDF(x*)=temp-cumArea
     temp<-runif(1)*sum(A_k)
     k<-length(T_k)
     for (i in 1:k){
       a<-h_k_prime[i]
       b<-h_k[i]-T_k[i]*a
       if(i==1 && temp<cumArea[1]){
-        x_star<-(log(exp(a*T_k[1]+b)+temp*sum(A_k)*a)-b)/a
+        x_star<-(log(exp(a*T_k[1]+b)+temp*a)-b)/a
         break
       }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
         if (a==0){
-          x_star<-(temp-cumArea[i-1])*sum(A_k)/exp(b)+z_k[i-1]
+          x_star<-(temp-cumArea[i-1])/exp(b)+z_k[i-1]
           break
         }
-        
-        x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*sum(A_k)*a)-b)/a
+        x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*a)-b)/a
         break
       }
     }
@@ -298,7 +218,7 @@ check_concave <- function(u_k, l_k) {
   return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
 }
 
-update <- function(x_star, data, h) { #Zixiao
+update <- function(x_star, data, u_k, l_k,h) { #Zixiao
   with(data,{
     T_k <- sort(append(data$T_k, x_star))
     position <- (which(T_k == x_star) - 1)
