@@ -28,7 +28,9 @@ points(z_k, u_z)
 g<-function(x) x^2*exp(-x/2)
 
 ### OUR PARENT FUNCTION ARS() ###
-ARS<-function(k,g,n,xlb,xub){
+ARS<-function(g,n,xlb,xub){
+  library("numDeriv")
+  k=5
   # Initialization
   h <- function(x) (return(log(g(x))))            # Function h = log(g)
   mode <- optim(0,g, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1]
@@ -38,7 +40,7 @@ ARS<-function(k,g,n,xlb,xub){
   if (xlb == -Inf){
     xlb <- mode$par - 10
   }
-  print(c(mode,xlb,xub))
+  print(mode)
   sample <- vector()                              # Vector that stores all the sampled points (different from T_k)
   T_k <- compute_T_k(k,xlb,xub)                   # Initialize the evenly spaced x points on domain D
   h_k <- compute_h_k(T_k, h)                      # Obtain the values of h evaluated at T_k 
@@ -94,7 +96,7 @@ ARS<-function(k,g,n,xlb,xub){
     
     # Updating
     if (squeeze==F){
-      data<-update(sample_point[1], data, u_k, l_k,h)
+      data<-update(sample_point[1], data,h)
     }
   }
  
@@ -118,7 +120,7 @@ n<-100
 g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given test function as standard normal
 g<-function(x) 0.25*x*exp(-x/2) #gamma(2,2)
 g<-function(x) 1/16*x^2*exp(-x/2) #gamma(3,2)
-g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)
+g<-function(x) x*(1-x)/beta(2,2) #beta(2,2)  domain (0,1)
 g<-function(x) (1/768)*x^4*exp(-x/2)
 # h <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) # given function as standard normal
 # body(h) <- deriv(body(h), "x")
@@ -296,7 +298,7 @@ check_concave <- function(u_k, l_k) {
   return(sum((sum(u_x < h(u_x))==0) + (sum(l_k > h(l_k))==0)) == 2)
 }
 
-update <- function(x_star, data, u_k, l_k,h) { #Zixiao
+update <- function(x_star, data, h) { #Zixiao
   with(data,{
     T_k <- sort(append(data$T_k, x_star))
     position <- (which(T_k == x_star) - 1)
