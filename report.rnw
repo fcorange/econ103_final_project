@@ -53,7 +53,7 @@ h <- composite(f, g)
 h(1)
 @
 
-Let us make sure the function composition works. Manually check: $h(1) = log\frac{1}{\sqrt{2\pi}}-\frac{1}{2}=-1.418939$. Then, we want to check boundries. Privously, we've ensured that the mode occurs in the boundries that user inputs. Now we'd to truncate were the boundries specified unbounded.
+Let us make sure the function composition works. Manually check: $h(1) = log\frac{1}{\sqrt{2\pi}}-\frac{1}{2}=-1.418939$. Then, we want to check boundaries. Previously, we've ensured that the mode occurs in the boundaries that user inputs. Now we'd to truncate were the boundaries specified unbounded.
 
 <<chunck3, eval=TRUE>>=
 ######  checking Inf ######  
@@ -70,7 +70,7 @@ if (xlb == -Inf){
 }
 @
 
-In the above setting, we have (in default unbounded configurations) the first sample point has positive derivative and the last sample point has negative derivative, i.e. $h'(T_k[1])>0$ and $h'(T_k[k])<0$. Also, it's worth noting that the boundries were truncated from $[-Inf, Inf]$ to $[mode-10, mode+10]$. 
+In the above setting, we have (in default unbounded configurations) the first sample point has positive derivative and the last sample point has negative derivative, i.e. $h'(T_k[1])>0$ and $h'(T_k[k])<0$. Also, it's worth noting that the boundaries were truncated from $[-Inf, Inf]$ to $[mode-10, mode+10]$. 
 
 <<chunck4, eval=TRUE>>=
 sample <- vector()   # Vector that stores all the sampled points (different from T_k)
@@ -96,14 +96,14 @@ h_k
 @
 
 
-We set the initial values evenly from $T_k$, and evalute each point with respect to function $h$ to obtain $h_k$. We'd like to compute derivatives of the function $h$ at each initial point, i.e. $h'(T_k)$. We use $numDeriv$ package to perform this job, and further realize that it can be done in a vectorized fashion, which simply is:
+We set the initial values evenly from $T_k$, and evaluate each point with respect to function $h$ to obtain $h_k$. We'd like to compute derivatives of the function $h$ at each initial point, i.e. $h'(T_k)$. We use $numDeriv$ package to perform this job, and further realize that it can be done in a vectorized fashion, which simply is:
 
 <<chunck5, eval=TRUE>>=
 library(numDeriv)
 h_k_prime <- grad(h, T_k)   # Obtain the derivative of h evaluated at T_k
 h_k_prime
 @
-In light of the standard normal, $h'(x) = (log\frac{1}{\sqrt{2\pi}}-\frac{x^2}{2})'= -x$. Thus, our $h_{k.prime}$ is simply the inverse of our $T_k$. Subsequentially, we compute the tangency intersections $z_k$.
+In light of the standard normal, $h'(x) = (log\frac{1}{\sqrt{2\pi}}-\frac{x^2}{2})'= -x$. Thus, our $h_{k.prime}$ is simply the inverse of our $T_k$. Thus, we compute the tangent line intersections $z_k$.
 
 <<chunck6, eval=TRUE>>=
 ###### z_k coordinates ######  
@@ -118,7 +118,7 @@ z_k <- compute_z_k(T_k, h_k, h_k_prime) # Obtain the intersections of tangent li
 z_k[k] <-T_k[k]
 @
 
-To make everything easy to manipulate, we will put the our data into a dataframe. Notice that $z_k$, the tangency intersections, has one less value thus we'd manually add a dummy value to ensure equal length. Also, $A_k$ is the area of each exponentiated trapezoid. For the time being, we initilize the vector to compile the dataframe.
+To make everything easy to manipulate, we will put the our data into a data frame. Notice that $z_k$, the tangent line intersections, has one less value thus we'd manually add a dummy value to ensure equal length. Also, $A_k$ is the area of each exponentiated trapezoid. For the time being, we initialize the vector to compile the data frame.
 
 <<chunck7, eval=TRUE>>=
 A_k <- rep(0,length=k) # Initialize the vector of area
@@ -128,7 +128,7 @@ names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
 data
 @
 
-Before we proceed to compute upperbound and lowerbound, we'd want to consider a special case when the underlying distribution provided was $uniform$. In such case, we have developed a test for the $z_k$ vector. If any vector element was NA (i.e. as a result of tangent lines being parallel to the x-axis), we prompt the following warning:
+Before we proceed to compute upper bound and lower bound, we'd want to consider a special case when the underlying distribution provided was $uniform$. In such case, we have developed a test for the $z_k$ vector. If any vector element was NA (i.e. as a result of tangent lines being parallel to the x-axis), we prompt the following warning:
 
 <<chunck8,eval=TRUE>>=
 if(any(is.na(z_k))){
@@ -137,7 +137,7 @@ if(any(is.na(z_k))){
 }
 @
 
-The reason for the above is that we've encountered an error while testing ARS. We finally debugged down to the area vector, one of whose element reported NA. Thus, we realized that the drivative at that specific point was $0$. In the sampling modular (about statistic $S_k$), we will have to divide a zero quantity (i.e. the derivative at that point) - which, led to the error. Hence, similar to an uniform distribution, we consider $h'(x)$ a special case (and, please refer to the sampling modular for more). Next, we want to construct the upperbound function and test it. 
+The reason for the above is that we've encountered an error while testing ARS. We finally debugged down to the area vector, one of whose element reported NA. Thus, we realized that the derivative at that specific point was $0$. In the sampling modular (about statistic $S_k$), we will have to divide a zero quantity (i.e. the derivative at that point) - which, led to the error. Hence, similar to an uniform distribution, we consider $h'(x)$ a special case (and, please refer to the sampling modular for more). Next, we want to construct the upper bound function and test it. 
 
 <<chunck9,eval=TRUE>>=
 ###### upper bound ######  
@@ -175,14 +175,14 @@ grad(h, 5)
 h(5)-grad(h, 5)*5
 @
 
-Further, we can show the $u_x$ we defined is an upperbound of $h(x)$.
+Further, we can show the $u_x$ we defined is an upper bound of $h(x)$.
 
 <<chunck12, eval=TRUE>>=
 compute_u_k(data,5.8)(5.8)
 -5*5.8+11.58106
 @
 
-Similarly, we can check validity of our lowerbound function.
+Similarly, we can check validity of our lower bound function.
 
 <<chunck13, eval=TRUE>>=
 ###### lower bound ######  
@@ -198,7 +198,7 @@ compute_l_k <- function(T_k,h_k,x) {
 }
 @
 
-Again, take $x=5.8$, the lowerbound line has slope $k=-7.5$ and $b=24.08106$, thus $y=-7.5 \times x + 24.08106$.
+Again, take $x=5.8$, the lower bound line has slope $k=-7.5$ and $b=24.08106$, thus $y=-7.5 \times x + 24.08106$.
 
 <<chunck14, eval=TRUE>>=
 T_k
@@ -208,7 +208,7 @@ compute_l_k(T_k,h_k,5.8)(5.8) # 1st 5.8 used in if statements, 2nd 5.8 used as a
 
 Finally, let us plot the $h(x)$, $u_x$, and $l_x$ on the same graph.
 
-<<chunck15>>=
+<<chunck15, eval=TRUE, fig.width=5, fig.height=5>>=
 xval <- seq(xlb, xub, by = 0.01)
 plot(xval, h(xval), pch=".", col="red", main="h(x), u_x, and l_x")
 upper <- 0
@@ -223,9 +223,9 @@ for (i in 1:length(xval)){
 points(xval,lower,pch=".", col="yellow")
 @
 
-Finally, we'd like to test the area function that computes each exponentiated trapezoid underneath the piece-wise upperbound $u_x$. Let us initialize our area function, entitled "$A()$".
+Finally, we'd like to test the area function that computes each exponentiated trapezoid underneath the piece-wise upper bound $u_x$. Let us initialize our area function, entitled "$A()$".
 
-<<chunck16>>=
+<<chunck16, eval=TRUE>>=
 ### Function A computes area between i-1 and i in z_k
 A <- function(i, data){ 
   with(data,{
@@ -241,9 +241,9 @@ A <- function(i, data){
   })
 } 
 @
-Let us say we are interested in the $2^{nd}$ trapezoid (note: $k=5$, thus $T_k$ has 5 elements and $z_k$ has 4 meaningful elements). In light of the above log standard normal example, the $2^{nd}$ trapezoid has an area equal to intergrating on the log standard normal curve from $z_k[1]$ to $z_k[2]$.
+Let us say we are interested in the $2^{nd}$ trapezoid (note: $k=5$, thus $T_k$ has 5 elements and $z_k$ has 4 meaningful elements). In light of the above log standard normal example, the $2^{nd}$ trapezoid has an area equal to integrating on the log standard normal curve from $z_k[1]$ to $z_k[2]$.
 
-<<chunck17>>=
+<<chunck17, eval=TRUE>>=
 composite<-function(c,d) function(...) c(d(...))
 c<-function(x) compute_u_k(data,T_k[2])
 d<-function(x) exp(x)
@@ -252,9 +252,9 @@ integrate(e, z_k[1], z_k[2])
 ## Whoops. This area should be positive as integrant is exp
 @
 
-We see that $integrate()$ cannot run on composite function in r. Hence, we have to approximate the area underneath exponentiated piece-wise upperbound $u_k$ ourselves. From below, we see that particular line segment of the $2^{nd}$ trapezoid is $y = 5 \times x + 11.58106$.
+We see that $integrate()$ cannot run on composite function in r. Hence, we have to approximate the area underneath exponentiated piece-wise upper bound $u_k$ ourselves. From below, we see that particular line segment of the $2^{nd}$ trapezoid is $y = 5 \times x + 11.58106$.
 
-<<chunck18>>=
+<<chunck18,eval=TRUE>>=
 h_k_prime[2]
 T_k[2]
 h_k[2]
@@ -262,14 +262,14 @@ h_k[2]
 
 By the following math, we are able to compute each of the exponentiated trapezoid. $\int_{z_k[1]}^{z_k[2]} \mathrm{e}^{5 \times x + 11.58106}\,\mathrm{d}x = \frac{1}{5}e^{5 \times x + 11.58106} |_{z_k[1]}^{z_k[2]}$.
 
-<<chunck19>>=
+<<chunck19,eval=TRUE>>=
 (exp(5*z_k[2]+ 11.58106)-exp(5*z_k[1]+ 11.58106))/5
 A(2,data)
 @
 
 It proves that our area function works good. Note that as we approximate, we are doing multiplications which result in a loss of precision. Finally, we put the pieces together and update our data frame.
 
-<<chunck20>>=
+<<chunck20,eval=TRUE>>=
 for (i in 1:length(T_k)) {                    
  A_k[i] <- A(i, data)
 }
@@ -296,7 +296,7 @@ Now we have $k=5$ initial points in $T_{k}$ and $k$ tangent lines which intersec
     
     $$\frac{e^{ax+b}}{a}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[j-1]$$ where $$a=h^{'}(x_{j}), b=h(x_{j})-ax_{j}$$
     
-    Expanding everyting out and reorganizing the equation, we have:
+    Expanding everything out and reorganizing the equation, we have:
     
     $$x^{*}=\frac{log[e^{az_{j-1}+1}+(u^{'}-cumArea[j-1])a]-b}{a}$$
     
@@ -451,11 +451,15 @@ Some summary statistics of the sampled values are listed below:
 -4.976000 -0.675600 -0.004458  0.000150  0.681500  3.905000
 @
 
-<<plot_standard_normal, echo=FALSE, fig.width=5, fig.height=5>>=
+<<plot_standard_normal2, echo=FALSE, fig.width=5, fig.height=5, tidy=FALSE>>=
+colvec <- vector()
+colvec[1] <- "red"
+title <- vector()
+title[1] <- "True Function Value"
 hist(samp01, main="Sampling from standard normal", xlab="Sampled values", freq=FALSE)
 xaxis <- seq(-5,5,0.001)
 lines(xaxis, g1(xaxis), pch=".", col="red")
-legend(-4.5,0.38, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+legend(-4.5,0.38, col=colvec,lty=1,legend=title,cex=0.6)
 @
 
 \subsubsection{Standard normal kernel with mean = 3}
@@ -477,10 +481,14 @@ Some summary statistics of the sampled values are listed below:
 @
 
 <<plot_normal_kernel, echo=FALSE, fig.width=5, fig.height=5>>=
-hist(samp001, main="Sampling from normal kernel with mean = 3", xlab="Sampled values", freq=FALSE, ylim=c(0,1))
+colvec <- vector()
+colvec[1] <- "red"
+title <- vector()
+title[1] <- "True Function Value"
+hist(samp001, main="Sampling from normal kernel with mean = 3", xlab="Sampled values", freq=FALSE, ylim=seq(0,1,1))
 xaxis <- seq(-1,6,0.001)
 lines(xaxis, g2(xaxis), pch=".", col="red")
-legend(-0.7,0.9, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+legend(-0.7,0.9, col=colvec,lty=1,legend=title,cex=0.6)
 @
 
 \subsubsection{Gamma(2,2)}
@@ -502,9 +510,13 @@ Some summary statistics of the sampled values are listed below:
 
 <<plot_gamma, echo=FALSE, fig.width=5, fig.height=5>>=
 hist(samp02, main="Sampling from Gamma(2,2)", xlab="Sampled values", freq=FALSE)
+colvec <- vector()
+colvec[1] <- "red"
+title <- vector()
+title[1] <- "True Function Value"
 xaxis <- seq(0,12,0.001)
 lines(xaxis, g3(xaxis), pch=".", col="red")
-legend(8,0.16, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+legend(8,0.16, col=colvec,lty=1,legend=title,cex=0.6)
 @
 
 \subsubsection{Unnormalized Gamma(3,2) Kernel}
@@ -526,10 +538,14 @@ Some summary statistics of the sampled values are listed below:
 @
 
 <<plot_gamma_kernel, echo=FALSE, fig.width=5, fig.height=5>>=
-hist(samp003, main="Sampling from a unnormalized Gamma(3,2) kernel", xlab="Sampled values", freq=FALSE, ylim = c(0,2.2))
+colvec <- vector()
+colvec[1] <- "red"
+title <- vector()
+title[1] <- "True Function Value"
+hist(samp003, main="Sampling from a unnormalized Gamma(3,2) kernel", xlab="Sampled values", freq=FALSE, ylim = seq(0,2.2,2.2))
 xaxis <- seq(0,14,0.001)
 lines(xaxis, g4(xaxis), pch=".", col="red")
-legend(8,2, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+legend(8,2, col=colvec,lty=1,legend=title,cex=0.6)
 @
 
 \subsubsection{Beta(2,2) Kernel}
@@ -550,10 +566,14 @@ Some summary statistics of the sampled values are listed below:
 @
 
 <<plot_beta_kernel, echo=FALSE, fig.width=5, fig.height=5>>=
-hist(samp04, main="Sampling from a Beta(2,2) kernel", xlab="Sampled values", freq=FALSE, ylim = c(0,2.2))
+colvec <- vector()
+colvec[1] <- "red"
+title <- vector()
+title[1] <- "True Function Value"
+hist(samp04, main="Sampling from a Beta(2,2) kernel", xlab="Sampled values", freq=FALSE, ylim = seq(0,2.2,2.2))
 xaxis <- seq(0,1,0.001)
 lines(xaxis, g5(xaxis), pch=".", col="red")
-legend(0,1.8, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+legend(0,1.8, col=colvec,lty=1,legend=title,cex=0.6)
 @
 
 \subsection{Testing on Non Log-concave Functions}
@@ -568,9 +588,13 @@ The density is given by:
 $$f(x)=\frac{2}{\sqrt{2\pi}}e^{-\frac{(x-4)^{2}}{2}} + \frac{1}{\sqrt{2\pi}}e^{-\frac{x^{2}}{2}}$$
 The true density function looks like follows:
 <<plot_normal_mixture, echo=FALSE, fig.width=5, fig.height=5>>=
+colvec <- vector()
+colvec[1] <- "red"
+title <- vector()
+title[1] <- "True Function Value"
 xaxis <- seq(-5,5,0.001)
 plot(xaxis, g6(xaxis), pch=".", col="red", main="Sampling from a normal mixture", xlab="Values", ylab="Density")
-legend(-4.5,0.75, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+legend(-4.5,0.75, col=colvec,lty=1,legend=title,cex=0.6)
 @
 Since this is not a log-concave function, we would expect an error when executing the \texttt{ars()} function:
 <<output_normal_mixture, eval=FALSE>>=
@@ -592,10 +616,16 @@ The density is given by:
 $$f(x)=\frac{x(1-x)}{beta(2,2)}$$
 The density was plotted below with the inputted domain range highlighted:
 <<bad_lower_upper_bound, echo=FALSE,fig.width=5, fig.height=5>>=
+colvec <- vector()
+colvec[1] <- "red"
+colvec[2] <- "black"
+title <- vector()
+title[1] <- "True Function Value"
+title[2] <- "Input Domain"
 xval <- seq(0,1,0.001)
-plot(xval, g7(xval), pch=".", col="red", main="Density of Beta(2,2)", xlim = c(-1.5,1.5), xlab="Values", ylab="Density")
-abline(v=c(-1,1), lty=3)
-legend(-0.9,1.4, col=c("red", "black"),lty=c(1,3),legend=c("True Function Value","Input Domain"),cex=0.6)
+plot(xval, g7(xval), pch=".", col="red", main="Density of Beta(2,2)", xlim = seq(-1.5,1.5,3), xlab="Values", ylab="Density")
+abline(v=seq(-1,1,2), lty=3)
+legend(-0.9,1.4, col=colvec,lty=seq(1,3,2),legend=title,cex=0.6)
 @
 It's not surprising that we will have a warning message if we execute the \texttt{ars()} function with these inputs:
 <<output_bad_lower_upper_bound, eval=FALSE>>=
