@@ -30,6 +30,251 @@ options(replace.assign=TRUE,width=90)
 
 \maketitle
 \section{Initialization}
+Assuming initial user inputs are checked, which will be covered in section 3, initialization is performed on $k=5$, given kernel/density $g$, and lower and upper bounds of $x$. For the purpose of testing this modular, we assume the following (in particular, assume domain $D$ is the entire real line):
+
+<<chunck1, eval=TRUE>>=
+k<-5
+xlb <- -Inf # lowerbound
+xub <- Inf # upperbound
+n<-100
+
+######  define g ######  
+g <- function(x)   (((2*pi)^-0.5)*exp(-(x)^2/2)) 
+# given test function as standard normal
+@
+
+Obviously, the standard normal is a log-concave function in the domain of $[-Inf, Inf]$. Next, we want to explicitly compute the derivative of $g=density$($N(0,1)$), i.e. the function $h$.
+
+<<chunck2, eval=TRUE>>=
+######  log g = h ######  
+composite<-function(f,g) function(...) f(g(...))
+f <- function(x) log(x);
+h <- composite(f, g)
+h(1)
+@
+
+Let us make sure the function composition works. Manually check: $h(1) = log\frac{1}{\sqrt{2\pi}}-\frac{1}{2}=-1.418939$. Then, we want to check boundries. Privously, we've ensured that the mode occurs in the boundries that user inputs. Now we'd to truncate were the boundries specified unbounded.
+
+<<chunck3, eval=TRUE>>=
+######  checking Inf ######  
+mode <- try(optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method= "L-BFGS-B")[1],silent=T)
+if (class(mode)=="try-error"){
+   warning("Mode not found in range. Please check your kernel/density or change xlb/xub.")
+   return()
+}
+if (xub == Inf){
+  xub <- mode$par + 10 # arbitary number bounds mode if D specified unbounded
+}
+if (xlb == -Inf){
+   xlb <- mode$par - 10
+}
+@
+
+In the above setting, we have (in default unbounded configurations) the first sample point has positive derivative and the last sample point has negative derivative, i.e. $h'(T_k[1])>0$ and $h'(T_k[k])<0$. Also, it's worth noting that the boundries were truncated from $[-Inf, Inf]$ to $[mode-10, mode+10]$. 
+
+<<chunck4, eval=TRUE>>=
+sample <- vector()   # Vector that stores all the sampled points (different from T_k)
+######  evenly initialize  find T_k in D ######  
+compute_T_k <- function(k,xlb,xub){ # draw k integers from domain D
+ T_k <- rep(0,k) # initialize global T_k
+ T_k[1] <- xlb
+ T_k[k] <- xub
+ for (i in 2:(k-1)){
+   T_k[i] <- T_k[i-1] + (xub-xlb)/(k-1)
+ }
+ return(T_k)
+}
+T_k <- compute_T_k(k,xlb,xub)   # Initialize the evenly spaced x points on domain D
+T_k
+
+###### function evaluated at T_k  ######  
+compute_h_k <- function(T_k, h){
+ return(h(T_k))
+}
+h_k <- compute_h_k(T_k, h) # Obtain the values of h evaluated at T_k 
+h_k
+@
+
+
+We set the initial values evenly from $T_k$, and evalute each point with respect to function $h$ to obtain $h_k$. We'd like to compute derivatives of the function $h$ at each initial point, i.e. $h'(T_k)$. We use $numDeriv$ package to perform this job, and further realize that it can be done in a vectorized fashion, which simply is:
+
+<<chunck5, eval=TRUE>>=
+library(numDeriv)
+h_k_prime <- grad(h, T_k)   # Obtain the derivative of h evaluated at T_k
+h_k_prime
+@
+In light of the standard normal, $h'(x) = (log\frac{1}{\sqrt{2\pi}}-\frac{x^2}{2})'= -x$. Thus, our $h_{k.prime}$ is simply the inverse of our $T_k$. Subsequentially, we compute the tangency intersections $z_k$.
+
+<<chunck6, eval=TRUE>>=
+###### z_k coordinates ######  
+compute_z_k <- function(T_k, h_k, h_k_prime){  # tangent line intersections
+ z_k <- rep (0, k-1)
+ for (i in 1:k-1){
+   z_k[i] <- (h_k[i+1]-h_k[i]-T_k[i+1]*h_k_prime[i+1]+T_k[i]*h_k_prime[i])/(h_k_prime[i]-h_k_prime[i+1])
+ }
+ return(z_k)
+}
+z_k <- compute_z_k(T_k, h_k, h_k_prime) # Obtain the intersections of tangent lines (k-1 elements)
+z_k[k] <-T_k[k]
+@
+
+To make everything easy to manipulate, we will put the our data into a dataframe. Notice that $z_k$, the tangency intersections, has one less value thus we'd manually add a dummy value to ensure equal length. Also, $A_k$ is the area of each exponentiated trapezoid. For the time being, we initilize the vector to compile the dataframe.
+
+<<chunck7, eval=TRUE>>=
+A_k <- rep(0,length=k) # Initialize the vector of area
+# Create a data frame
+data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
+names(data) <- c("T_k","h_k","h_k_prime","z_k","A_k")
+data
+@
+
+Before we proceed to compute upperbound and lowerbound, we'd want to consider a special case when the underlying distribution provided was $uniform$. In such case, we have developed a test for the $z_k$ vector. If any vector element was NA (i.e. as a result of tangent lines being parallel to the x-axis), we prompt the following warning:
+
+<<chunck8,eval=TRUE>>=
+if(any(is.na(z_k))){
+ warning("Your kernel is uniform, please sample with runif() instead.")
+ return()
+}
+@
+
+The reason for the above is that we've encountered an error while testing ARS. We finally debugged down to the area vector, one of whose element reported NA. Thus, we realized that the drivative at that specific point was $0$. In the sampling modular (about statistic $S_k$), we will have to divide a zero quantity (i.e. the derivative at that point) - which, led to the error. Hence, similar to an uniform distribution, we consider $h'(x)$ a special case (and, please refer to the sampling modular for more). Next, we want to construct the upperbound function and test it. 
+
+<<chunck9,eval=TRUE>>=
+###### upper bound ######  
+# returns a function u_x(x)
+# If we want u_x(x) evaluated at x*, call u_x(h_k,h_k_prime,z_k,T_k)(x)
+# Note: not u_x(x*)(x*)
+compute_u_k <- function(data,x) {
+ with(data,{
+    if ((T_k[1] <= x) && (x < z_k[1])){
+      return (function(x) (h_k[1] + (x-T_k[1])*h_k_prime[1]))
+    }
+    for (i in 1:(length(T_k)-2)){
+      if(z_k[i] <= x && x < z_k[i+1]){
+        return (function(x) (h_k[i+1] + (x-T_k[i+1])*h_k_prime[i+1]))
+      }
+    }
+   if ((z_k[length(T_k)-1] <= x) && (x <= T_k[length(T_k)])){
+     return (function(x) (h_k[length(T_k)] + (x-T_k[length(T_k)])*h_k_prime[length(T_k)]))
+    }
+  })
+}
+@
+
+Let us choose $x=5.8$ in the truncated domain $[-10,10]$. To find out the line segment bounding the neighborhood $x=5.8$, take a look at $z_k$ and realize the line segment is the line tangent to point (5, h(5)). (Note, $x=5.8$ in the range [5, 10]).
+
+<<chunck10,eval=TRUE>>=
+z_k
+T_k
+@
+
+Hence, we'd like to compute the gradient at 5 and solve for the linear equation. Below indicates the line has slope $k=-5$, and y-intercept $b=11.58106$.
+
+<<chunck11, eval=TRUE>>=
+grad(h, 5)
+h(5)-grad(h, 5)*5
+@
+
+Further, we can show the $u_x$ we defined is an upperbound of $h(x)$.
+
+<<chunck12, eval=TRUE>>=
+compute_u_k(data,5.8)(5.8)
+-5*5.8+11.58106
+@
+
+Similarly, we can check validity of our lowerbound function.
+
+<<chunck13, eval=TRUE>>=
+###### lower bound ######  
+compute_l_k <- function(T_k,h_k,x) {
+  for (i in 1:(length(T_k)-1)){
+   if(T_k[i] <= x && x < T_k[i+1]){
+     return(function(x) ((T_k[i+1]-x)*h_k[i]+(x-T_k[i])*h_k[i+1])/(T_k[i+1]-T_k[i]))
+    }
+  }
+  if (x == T_k[length(T_k)]){
+    return(function(x) ((T_k[length(T_k)]-x)*h_k[length(T_k)-1]+(x-T_k[length(T_k)-1])*h_k[length(T_k)])/(T_k[length(T_k)]-T_k[length(T_k)-1]))
+ }
+}
+@
+
+Again, take $x=5.8$, the lowerbound line has slope $k=-7.5$ and $b=24.08106$, thus $y=-7.5 \times x + 24.08106$.
+
+<<chunck14, eval=TRUE>>=
+T_k
+compute_l_k(T_k,h_k,5.8)(5.8) # 1st 5.8 used in if statements, 2nd 5.8 used as an evaluation point
+-7.5 * 5.8 + 24.08106
+@
+
+Finally, let us plot the $h(x)$, $u_x$, and $l_x$ on the same graph.
+
+<<chunck15>>=
+xval <- seq(xlb, xub, by = 0.01)
+plot(xval, h(xval), pch=".", col="red", main="h(x), u_x, and l_x")
+upper <- 0
+for (i in 1:length(xval)){
+  upper[i] <- compute_u_k(data, xval[i])(xval[i])
+}
+points(xval,upper,pch=".", col="blue")
+lower <- 0
+for (i in 1:length(xval)){
+  lower[i] <- compute_l_k(T_k,h_k,xval[i])(xval[i])
+}
+points(xval,lower,pch=".", col="yellow")
+@
+
+Finally, we'd like to test the area function that computes each exponentiated trapezoid underneath the piece-wise upperbound $u_x$. Let us initialize our area function, entitled "$A()$".
+
+<<chunck16>>=
+### Function A computes area between i-1 and i in z_k
+A <- function(i, data){ 
+  with(data,{
+    a<-h_k_prime[i]
+    b<-h_k[i]-T_k[i]*a
+    if(a==0){
+      return(exp(b)*(z_k[i]-z_k[i-1]))
+    }else if (i==1){
+      return (-(exp(a*T_k[1]+b)-exp(a*z_k[1]+b))/a)
+    }else{
+      return (-(exp(a*z_k[i-1]+b)-exp(a*z_k[i]+b))/a)
+    }
+  })
+} 
+@
+Let us say we are interested in the $2^{nd}$ trapezoid (note: $k=5$, thus $T_k$ has 5 elements and $z_k$ has 4 meaningful elements). In light of the above log standard normal example, the $2^{nd}$ trapezoid has an area equal to intergrating on the log standard normal curve from $z_k[1]$ to $z_k[2]$.
+
+<<chunck17>>=
+composite<-function(c,d) function(...) c(d(...))
+c<-function(x) compute_u_k(data,T_k[2])
+d<-function(x) exp(x)
+e <-composite(f,g)
+integrate(e, z_k[1], z_k[2])
+## Whoops. This area should be positive as integrant is exp
+@
+
+We see that $integrate()$ cannot run on composite function in r. Hence, we have to approximate the area underneath exponentiated piece-wise upperbound $u_k$ ourselves. From below, we see that particular line segment of the $2^{nd}$ trapezoid is $y = 5 \times x + 11.58106$.
+
+<<chunck18>>=
+h_k_prime[2]
+T_k[2]
+h_k[2]
+@
+
+By the following math, we are able to compute each of the exponentiated trapezoid. $\int_{z_k[1]}^{z_k[2]} \mathrm{e}^{5 \times x + 11.58106}\,\mathrm{d}x = \frac{1}{5}e^{5 \times x + 11.58106} |_{z_k[1]}^{z_k[2]}$.
+
+<<chunck19>>=
+(exp(5*z_k[2]+ 11.58106)-exp(5*z_k[1]+ 11.58106))/5
+A(2,data)
+@
+
+It proves that our area function works good. Note that as we approximate, we are doing multiplications which result in a loss of precision. Finally, we put the pieces together and update our data frame.
+
+<<chunck20>>=
+for (i in 1:length(T_k)) {                    
+ A_k[i] <- A(i, data)
+}
+data$A_k <- A_k # update A_k in data frame
+@
 
 \section{Sampling and Updating}
 The sampling and updating steps are performed in a while loop. While desired the sample size \texttt{n} is not reached, the function continue to sample and update if needed. In the sampling step, we first need to find the cumulative areas under each piece-wise curve $s_{k}(x)$ from $z_{j-1}$ to $z_{j}$. The \texttt{sample\_val()} function will return a vector of $x^{*}$ and $u^{*}$ sampled. Then we need to compute $u_{k}(x^{*})$ and $l_{k}(x^{*})$ and pass these parameters into \texttt{squeeze\_test} and \texttt{rejection\_test}. If squeeze test fails and $h_{k}(x^{*})$ is evaluated, then we need to add this point $x^{*}$ into our initial set of $x$'s $T_{k}$, and update all the changes accordingly with the \texttt{update()} function.
