@@ -67,4 +67,80 @@ Now we have $k=5$ initial points in $T_{k}$ and $k$ tangent lines which intersec
 With $x^{*}$, $u^{*}$ and the values of $u_k(x)$ and $l_k(x)$ evaluated at $x^{*}$, we can now perform the squeezing test. If the squeezing test returns TRUE, then $x^{*}$ will be accepted and stored in our sample vecotr. Otherwise, $h_k(x^{*})$ will be evaluated and the rejection test will be performed. If the rejection test is passed, $x^{*}$ will be added intot the sample vector.
 
 
+\subsection{Updating}
+The code for the updating part is listed below (function \texttt{update()}):
+<<code_update, eval=FALSE>>=
+update <- function(x_star, data, u_k, l_k,h) { 
+  with(data,{
+    T_k <- sort(append(data$T_k, x_star))
+    position <- (which(T_k == x_star) - 1)
+    h_k <- append(data$h_k, compute_h_k(x_star, h), after = position)
+    h_k_prime <- append(data$h_k_prime, grad(h, x_star), after = position)
+    z_k <- compute_z_k(T_k, h_k, h_k_prime)
+    z_k <- c(z_k,tail(T_k,n=1))
+    A_k <- rep(0,length=length(T_k))
+    data <- data.frame(T_k,h_k,h_k_prime,z_k,A_k)
+    for (i in 1:length(T_k)) {                    
+      A_k[i] <- A(i, data)
+    }
+    data$A_k <- A_k
+    
+    return(data)
+  })
+}
+@
+
+When $h(x^{*})$ and $h^{'}(x^{*})$ were evaluated, we need to update the data frame we had, namely, to add the $x^{*}$ into the $T_{k}$ vector so that the number of elements in $T_{k}$ goes from $k$ to $k+1$. To do so, $x^{*}$ is appended into the $T_{k}$ vector and then the vector is sorted. The position of the new $x^{*}$ is then recorded so that vectors $h\_k$, $h\_k\_prime$, $z\_k$ and $A\_k$ were all updated. Finally, $cumArea$ was updated as well based on the new $A\_k$ vector.
+
+\subsection{Check Log-concavity}
+When the user inputs the desired function, it is hard to check whether the input function is log-concave or not. Instead of writing an algorithm to check the log-concavity at this stage, we performed a bounding-check at each update. More specifically, when the data frame is updated, we will check on the mid-points of $T_{k}$, in terms of whether or not the upper and lower bounds are really bounding the values of the log-density, or in other words, we wish to have (for all the mid-points of $T_{k}$):
+
+$$u(x)\geq h(x), l(x)\leq h(x)$$
+
+If the data did not pass the test, a warning will be displayed and the \texttt{ars()} will stop processing. All of the above was done in function \texttt{check\_concave()}:
+
+<<code_check_concavity, eval=FALSE>>=
+check_concave <- function(data,h) {
+  sample_points <- vector()
+  for (i in 1:(length(data$T_k)-1)) {
+    sample_points[i] <- mean(c(data$T_k[i],data$T_k[i+1]))
+  }
+  u_k <- vector()
+  for (i in 1:length(sample_points)){
+    u_k[i]<-compute_u_k(data,sample_points[i])(sample_points[i])
+  } 
+  l_k <- vector()
+  for (i in 1:length(sample_points)){
+    l_k[i]<-compute_l_k(data$T_k,data$h_k,sample_points[i])(sample_points[i])
+  }
+  return(sum((sum(u_k < h(sample_points))==0) + (sum(l_k > h(sample_points))==0)) == 2)
+}
+@
+
+\subsection{Check User Input}
+When user inputs the arguments to the \texttt{ars()} function, we have to make sure that the inputs are reasonable values. Namely, we will check the following items:
+\begin{itemize}
+  \item The sample size $n$ is an integer and is sufficiently large ($>5$ in our case)
+  \item The density function $g$ is a function
+  \item The upper bound $xub$ is larger than or equal to the lower bound $xlb$
+\end{itemize}
+This part was done using the following code:
+<<code_check_input, eval=FALSE>>=
+check_input <- function(g,n,xlb,xub) {
+  if ((n<5)||(n%%1!=0)) {
+    warning("Sample size must be a bigger integer")
+    return()
+  }
+  if(xlb>=xub) {
+    warning ("Lower bound must be smaller than the upper bound")
+    return()
+  }
+  if (typeof(g)!="closure") {
+    warning("Input density is not a function")
+    return()
+  }
+}
+@
+
+
 \end{document}
