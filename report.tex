@@ -1,0 +1,997 @@
+%% LyX 2.0.6 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass{article}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+\usepackage[sc]{mathpazo}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{url}
+\usepackage[unicode=true,pdfusetitle,
+ bookmarks=true,bookmarksnumbered=true,bookmarksopen=true,bookmarksopenlevel=2,
+ breaklinks=false,pdfborder={0 0 1},backref=false,colorlinks=false]
+ {hyperref}
+\hypersetup{
+ pdfstartview={XYZ null null 1}}
+\usepackage{breakurl}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\begin{document}
+
+
+
+
+\title{Stat 243 Final Project}
+
+\author{Xi (Edward) Cai, Zhiwei (Cindy) Cai, Zixiao Chen, }
+
+\maketitle
+\section{Initialization}
+Assuming initial user inputs are checked, which will be covered in section 3, initialization is performed on $k=5$, given kernel/density $g$, and lower and upper bounds of $x$. For the purpose of testing this modular, we assume the following (in particular, assume domain $D$ is the entire real line):
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{k} \hlkwb{<-} \hlnum{5}
+\hlstd{xlb} \hlkwb{<-} \hlopt{-}\hlnum{Inf}  \hlcom{# lowerbound}
+\hlstd{xub} \hlkwb{<-} \hlnum{Inf}  \hlcom{# upperbound}
+\hlstd{n} \hlkwb{<-} \hlnum{100}
+\hlcom{###### define g ######}
+\hlstd{g} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) (((}\hlnum{2} \hlopt{*} \hlstd{pi)}\hlopt{^-}\hlnum{0.5}\hlstd{)} \hlopt{*} \hlkwd{exp}\hlstd{(}\hlopt{-}\hlstd{(x)}\hlopt{^}\hlnum{2}\hlopt{/}\hlnum{2}\hlstd{))}
+\hlcom{# given test function as standard normal}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+Obviously, the standard normal is a log-concave function in the domain of $[-Inf, Inf]$. Next, we want to explicitly compute the derivative of $g=density$($N(0,1)$), i.e. the function $h$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{###### log g = h ######}
+\hlstd{composite} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{f}\hlstd{,} \hlkwc{g}\hlstd{)} \hlkwa{function}\hlstd{(}\hlkwc{...}\hlstd{)} \hlkwd{f}\hlstd{(}\hlkwd{g}\hlstd{(...))}
+\hlstd{f} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{log}\hlstd{(x)}
+\hlstd{h} \hlkwb{<-} \hlkwd{composite}\hlstd{(f, g)}
+\hlkwd{h}\hlstd{(}\hlnum{1}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+## [1] -1.419
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+Let us make sure the function composition works. Manually check: $h(1) = log\frac{1}{\sqrt{2\pi}}-\frac{1}{2}=-1.418939$. Then, we want to check boundaries. Previously, we've ensured that the mode occurs in the boundaries that user inputs. Now we'd to truncate were the boundaries specified unbounded.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{###### checking Inf ######}
+\hlstd{mode} \hlkwb{<-} \hlkwd{try}\hlstd{(}\hlkwd{optim}\hlstd{(}\hlnum{0}\hlstd{, h,} \hlkwc{upper} \hlstd{= xub,} \hlkwc{lower} \hlstd{= xlb,} \hlkwc{control} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwc{fnscale} \hlstd{=} \hlopt{-}\hlnum{1}\hlstd{),} \hlkwc{method} \hlstd{=} \hlstr{"L-BFGS-B"}\hlstd{)[}\hlnum{1}\hlstd{],}
+    \hlkwc{silent} \hlstd{= T)}
+\hlkwa{if} \hlstd{(}\hlkwd{class}\hlstd{(mode)} \hlopt{==} \hlstr{"try-error"}\hlstd{) \{}
+    \hlkwd{warning}\hlstd{(}\hlstr{"Mode not found in range. Please check your kernel/density or change xlb/xub."}\hlstd{)}
+    \hlkwd{return}\hlstd{()}
+\hlstd{\}}
+\hlkwa{if} \hlstd{(xub} \hlopt{==} \hlnum{Inf}\hlstd{) \{}
+    \hlstd{xub} \hlkwb{<-} \hlstd{mode}\hlopt{$}\hlstd{par} \hlopt{+} \hlnum{10}  \hlcom{# arbitary number bounds mode if D specified unbounded}
+\hlstd{\}}
+\hlkwa{if} \hlstd{(xlb} \hlopt{== -}\hlnum{Inf}\hlstd{) \{}
+    \hlstd{xlb} \hlkwb{<-} \hlstd{mode}\hlopt{$}\hlstd{par} \hlopt{-} \hlnum{10}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+In the above setting, we have (in default unbounded configurations) the first sample point has positive derivative and the last sample point has negative derivative, i.e. $h'(T_k[1])>0$ and $h'(T_k[k])<0$. Also, it's worth noting that the boundaries were truncated from $[-Inf, Inf]$ to $[mode-10, mode+10]$. 
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{sample} \hlkwb{<-} \hlkwd{vector}\hlstd{()}  \hlcom{# Vector that stores all the sampled points (different from T_k)}
+\hlcom{###### evenly initialize find T_k in D ###### draw k integers from domain D}
+\hlstd{compute_T_k} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{k}\hlstd{,} \hlkwc{xlb}\hlstd{,} \hlkwc{xub}\hlstd{) \{}
+    \hlstd{T_k} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlnum{0}\hlstd{, k)}  \hlcom{# initialize global T_k}
+    \hlstd{T_k[}\hlnum{1}\hlstd{]} \hlkwb{<-} \hlstd{xlb}
+    \hlstd{T_k[k]} \hlkwb{<-} \hlstd{xub}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{2}\hlopt{:}\hlstd{(k} \hlopt{-} \hlnum{1}\hlstd{)) \{}
+        \hlstd{T_k[i]} \hlkwb{<-} \hlstd{T_k[i} \hlopt{-} \hlnum{1}\hlstd{]} \hlopt{+} \hlstd{(xub} \hlopt{-} \hlstd{xlb)}\hlopt{/}\hlstd{(k} \hlopt{-} \hlnum{1}\hlstd{)}
+    \hlstd{\}}
+    \hlkwd{return}\hlstd{(T_k)}
+\hlstd{\}}
+\hlstd{T_k} \hlkwb{<-} \hlkwd{compute_T_k}\hlstd{(k, xlb, xub)}  \hlcom{# Initialize the evenly spaced x points on domain D}
+\hlstd{T_k}
+\end{alltt}
+\begin{verbatim}
+## [1] -10  -5   0   5  10
+\end{verbatim}
+\begin{alltt}
+\hlcom{###### function evaluated at T_k ######}
+\hlstd{compute_h_k} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{T_k}\hlstd{,} \hlkwc{h}\hlstd{) \{}
+    \hlkwd{return}\hlstd{(}\hlkwd{h}\hlstd{(T_k))}
+\hlstd{\}}
+\hlstd{h_k} \hlkwb{<-} \hlkwd{compute_h_k}\hlstd{(T_k, h)}  \hlcom{# Obtain the values of h evaluated at T_k }
+\hlstd{h_k}
+\end{alltt}
+\begin{verbatim}
+## [1] -50.9189 -13.4189  -0.9189 -13.4189 -50.9189
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+
+We set the initial values evenly from $T_k$, and evaluate each point with respect to function $h$ to obtain $h_k$. We'd like to compute derivatives of the function $h$ at each initial point, i.e. $h'(T_k)$. We use $numDeriv$ package to perform this job, and further realize that it can be done in a vectorized fashion, which simply is:
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(numDeriv)}
+\hlstd{h_k_prime} \hlkwb{<-} \hlkwd{grad}\hlstd{(h, T_k)}  \hlcom{# Obtain the derivative of h evaluated at T_k}
+\hlstd{h_k_prime}
+\end{alltt}
+\begin{verbatim}
+## [1]  10   5   0  -5 -10
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+In light of the standard normal, $h'(x) = (log\frac{1}{\sqrt{2\pi}}-\frac{x^2}{2})'= -x$. Thus, our $h_{k.prime}$ is simply the inverse of our $T_k$. Thus, we compute the tangent line intersections $z_k$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{###### z_k coordinates ###### tangent line intersections}
+\hlstd{compute_z_k} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{T_k}\hlstd{,} \hlkwc{h_k}\hlstd{,} \hlkwc{h_k_prime}\hlstd{) \{}
+    \hlstd{z_k} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlnum{0}\hlstd{, k} \hlopt{-} \hlnum{1}\hlstd{)}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{k} \hlopt{-} \hlnum{1}\hlstd{) \{}
+        \hlstd{z_k[i]} \hlkwb{<-} \hlstd{(h_k[i} \hlopt{+} \hlnum{1}\hlstd{]} \hlopt{-} \hlstd{h_k[i]} \hlopt{-} \hlstd{T_k[i} \hlopt{+} \hlnum{1}\hlstd{]} \hlopt{*} \hlstd{h_k_prime[i} \hlopt{+} \hlnum{1}\hlstd{]} \hlopt{+} \hlstd{T_k[i]} \hlopt{*} \hlstd{h_k_prime[i])}\hlopt{/}\hlstd{(h_k_prime[i]} \hlopt{-}
+            \hlstd{h_k_prime[i} \hlopt{+} \hlnum{1}\hlstd{])}
+    \hlstd{\}}
+    \hlkwd{return}\hlstd{(z_k)}
+\hlstd{\}}
+\hlstd{z_k} \hlkwb{<-} \hlkwd{compute_z_k}\hlstd{(T_k, h_k, h_k_prime)}  \hlcom{# Obtain the intersections of tangent lines (k-1 elements)}
+\hlstd{z_k[k]} \hlkwb{<-} \hlstd{T_k[k]}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+To make everything easy to manipulate, we will put the our data into a data frame. Notice that $z_k$, the tangent line intersections, has one less value thus we'd manually add a dummy value to ensure equal length. Also, $A_k$ is the area of each exponentiated trapezoid. For the time being, we initialize the vector to compile the data frame.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{A_k} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlnum{0}\hlstd{,} \hlkwc{length} \hlstd{= k)}  \hlcom{# Initialize the vector of area}
+\hlcom{# Create a data frame}
+\hlstd{data} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(T_k, h_k, h_k_prime, z_k, A_k)}
+\hlkwd{names}\hlstd{(data)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"T_k"}\hlstd{,} \hlstr{"h_k"}\hlstd{,} \hlstr{"h_k_prime"}\hlstd{,} \hlstr{"z_k"}\hlstd{,} \hlstr{"A_k"}\hlstd{)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error: unused arguments ("{}h\_k"{}, "{}h\_k\_prime"{}, "{}z\_k"{}, "{}A\_k"{})}}\begin{alltt}
+\hlstd{data}
+\end{alltt}
+\begin{verbatim}
+##   T_k      h_k h_k_prime  z_k A_k
+## 1 -10 -50.9189        10 -7.5   0
+## 2  -5 -13.4189         5 -2.5   0
+## 3   0  -0.9189         0  2.5   0
+## 4   5 -13.4189        -5  7.5   0
+## 5  10 -50.9189       -10 10.0   0
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+Before we proceed to compute upper bound and lower bound, we'd want to consider a special case when the underlying distribution provided was $uniform$. In such case, we have developed a test for the $z_k$ vector. If any vector element was NA (i.e. as a result of tangent lines being parallel to the x-axis), we prompt the following warning:
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwa{if} \hlstd{(}\hlkwd{any}\hlstd{(}\hlkwd{is.na}\hlstd{(z_k))) \{}
+    \hlkwd{warning}\hlstd{(}\hlstr{"Your kernel is uniform, please sample with runif() instead."}\hlstd{)}
+    \hlkwd{return}\hlstd{()}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+The reason for the above is that we've encountered an error while testing ARS. We finally debugged down to the area vector, one of whose element reported NA. Thus, we realized that the derivative at that specific point was $0$. In the sampling modular (about statistic $S_k$), we will have to divide a zero quantity (i.e. the derivative at that point) - which, led to the error. Hence, similar to an uniform distribution, we consider $h'(x)$ a special case (and, please refer to the sampling modular for more). Next, we want to construct the upper bound function and test it. 
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{###### upper bound ###### returns a function u_x(x) If we want u_x(x) evaluated at x*, call}
+\hlcom{###### u_x(h_k,h_k_prime,z_k,T_k)(x) Note: not u_x(x*)(x*)}
+\hlstd{compute_u_k} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{data}\hlstd{,} \hlkwc{x}\hlstd{) \{}
+    \hlkwd{with}\hlstd{(data, \{}
+        \hlkwa{if} \hlstd{((T_k[}\hlnum{1}\hlstd{]} \hlopt{<=} \hlstd{x)} \hlopt{&&} \hlstd{(x} \hlopt{<} \hlstd{z_k[}\hlnum{1}\hlstd{])) \{}
+            \hlkwd{return}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) (h_k[}\hlnum{1}\hlstd{]} \hlopt{+} \hlstd{(x} \hlopt{-} \hlstd{T_k[}\hlnum{1}\hlstd{])} \hlopt{*} \hlstd{h_k_prime[}\hlnum{1}\hlstd{]))}
+        \hlstd{\}}
+        \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{(}\hlkwd{length}\hlstd{(T_k)} \hlopt{-} \hlnum{2}\hlstd{)) \{}
+            \hlkwa{if} \hlstd{(z_k[i]} \hlopt{<=} \hlstd{x} \hlopt{&&} \hlstd{x} \hlopt{<} \hlstd{z_k[i} \hlopt{+} \hlnum{1}\hlstd{]) \{}
+                \hlkwd{return}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) (h_k[i} \hlopt{+} \hlnum{1}\hlstd{]} \hlopt{+} \hlstd{(x} \hlopt{-} \hlstd{T_k[i} \hlopt{+} \hlnum{1}\hlstd{])} \hlopt{*} \hlstd{h_k_prime[i} \hlopt{+} \hlnum{1}\hlstd{]))}
+            \hlstd{\}}
+        \hlstd{\}}
+        \hlkwa{if} \hlstd{((z_k[}\hlkwd{length}\hlstd{(T_k)} \hlopt{-} \hlnum{1}\hlstd{]} \hlopt{<=} \hlstd{x)} \hlopt{&&} \hlstd{(x} \hlopt{<=} \hlstd{T_k[}\hlkwd{length}\hlstd{(T_k)])) \{}
+            \hlkwd{return}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) (h_k[}\hlkwd{length}\hlstd{(T_k)]} \hlopt{+} \hlstd{(x} \hlopt{-} \hlstd{T_k[}\hlkwd{length}\hlstd{(T_k)])} \hlopt{*} \hlstd{h_k_prime[}\hlkwd{length}\hlstd{(T_k)]))}
+        \hlstd{\}}
+    \hlstd{\})}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+Let us choose $x=5.8$ in the truncated domain $[-10,10]$. To find out the line segment bounding the neighborhood $x=5.8$, take a look at $z_k$ and realize the line segment is the line tangent to point (5, h(5)). (Note, $x=5.8$ in the range [5, 10]).
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{z_k}
+\end{alltt}
+\begin{verbatim}
+## [1] -7.5 -2.5  2.5  7.5 10.0
+\end{verbatim}
+\begin{alltt}
+\hlstd{T_k}
+\end{alltt}
+\begin{verbatim}
+## [1] -10  -5   0   5  10
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+Hence, we'd like to compute the gradient at 5 and solve for the linear equation. Below indicates the line has slope $k=-5$, and y-intercept $b=11.58106$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{grad}\hlstd{(h,} \hlnum{5}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+## [1] -5
+\end{verbatim}
+\begin{alltt}
+\hlkwd{h}\hlstd{(}\hlnum{5}\hlstd{)} \hlopt{-} \hlkwd{grad}\hlstd{(h,} \hlnum{5}\hlstd{)} \hlopt{*} \hlnum{5}
+\end{alltt}
+\begin{verbatim}
+## [1] 11.58
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+Further, we can show the $u_x$ we defined is an upper bound of $h(x)$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{compute_u_k}\hlstd{(data,} \hlnum{5.8}\hlstd{)(}\hlnum{5.8}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+## [1] -17.42
+\end{verbatim}
+\begin{alltt}
+\hlopt{-}\hlnum{5} \hlopt{*} \hlnum{5.8} \hlopt{+} \hlnum{11.58106}
+\end{alltt}
+\begin{verbatim}
+## [1] -17.42
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+Similarly, we can check validity of our lower bound function.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{###### lower bound ######}
+\hlstd{compute_l_k} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{T_k}\hlstd{,} \hlkwc{h_k}\hlstd{,} \hlkwc{x}\hlstd{) \{}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{(}\hlkwd{length}\hlstd{(T_k)} \hlopt{-} \hlnum{1}\hlstd{)) \{}
+        \hlkwa{if} \hlstd{(T_k[i]} \hlopt{<=} \hlstd{x} \hlopt{&&} \hlstd{x} \hlopt{<} \hlstd{T_k[i} \hlopt{+} \hlnum{1}\hlstd{]) \{}
+            \hlkwd{return}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) ((T_k[i} \hlopt{+} \hlnum{1}\hlstd{]} \hlopt{-} \hlstd{x)} \hlopt{*} \hlstd{h_k[i]} \hlopt{+} \hlstd{(x} \hlopt{-} \hlstd{T_k[i])} \hlopt{*} \hlstd{h_k[i} \hlopt{+} \hlnum{1}\hlstd{])}\hlopt{/}\hlstd{(T_k[i} \hlopt{+}
+                \hlnum{1}\hlstd{]} \hlopt{-} \hlstd{T_k[i]))}
+        \hlstd{\}}
+    \hlstd{\}}
+    \hlkwa{if} \hlstd{(x} \hlopt{==} \hlstd{T_k[}\hlkwd{length}\hlstd{(T_k)]) \{}
+        \hlkwd{return}\hlstd{(}\hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) ((T_k[}\hlkwd{length}\hlstd{(T_k)]} \hlopt{-} \hlstd{x)} \hlopt{*} \hlstd{h_k[}\hlkwd{length}\hlstd{(T_k)} \hlopt{-} \hlnum{1}\hlstd{]} \hlopt{+} \hlstd{(x} \hlopt{-} \hlstd{T_k[}\hlkwd{length}\hlstd{(T_k)} \hlopt{-}
+            \hlnum{1}\hlstd{])} \hlopt{*} \hlstd{h_k[}\hlkwd{length}\hlstd{(T_k)])}\hlopt{/}\hlstd{(T_k[}\hlkwd{length}\hlstd{(T_k)]} \hlopt{-} \hlstd{T_k[}\hlkwd{length}\hlstd{(T_k)} \hlopt{-} \hlnum{1}\hlstd{]))}
+    \hlstd{\}}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+Again, take $x=5.8$, the lower bound line has slope $k=-7.5$ and $b=24.08106$, thus $y=-7.5 \times x + 24.08106$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{T_k}
+\end{alltt}
+\begin{verbatim}
+## [1] -10  -5   0   5  10
+\end{verbatim}
+\begin{alltt}
+\hlkwd{compute_l_k}\hlstd{(T_k, h_k,} \hlnum{5.8}\hlstd{)(}\hlnum{5.8}\hlstd{)}  \hlcom{# 1st 5.8 used in if statements, 2nd 5.8 used as an evaluation point}
+\end{alltt}
+\begin{verbatim}
+## [1] -19.42
+\end{verbatim}
+\begin{alltt}
+\hlopt{-}\hlnum{7.5} \hlopt{*} \hlnum{5.8} \hlopt{+} \hlnum{24.08106}
+\end{alltt}
+\begin{verbatim}
+## [1] -19.42
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+Finally, let us plot the $h(x)$, $u_x$, and $l_x$ on the same graph.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{xval} \hlkwb{<-} \hlkwd{seq}\hlstd{(xlb, xub,} \hlkwc{by} \hlstd{=} \hlnum{0.01}\hlstd{)}
+\hlkwd{plot}\hlstd{(xval,} \hlkwd{h}\hlstd{(xval),} \hlkwc{pch} \hlstd{=} \hlstr{"."}\hlstd{,} \hlkwc{col} \hlstd{=} \hlstr{"red"}\hlstd{,} \hlkwc{main} \hlstd{=} \hlstr{"h(x), u_x, and l_x"}\hlstd{)}
+\hlstd{upper} \hlkwb{<-} \hlnum{0}
+\hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(xval)) \{}
+    \hlstd{upper[i]} \hlkwb{<-} \hlkwd{compute_u_k}\hlstd{(data, xval[i])(xval[i])}
+\hlstd{\}}
+\hlkwd{points}\hlstd{(xval, upper,} \hlkwc{pch} \hlstd{=} \hlstr{"."}\hlstd{,} \hlkwc{col} \hlstd{=} \hlstr{"blue"}\hlstd{)}
+\hlstd{lower} \hlkwb{<-} \hlnum{0}
+\hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(xval)) \{}
+    \hlstd{lower[i]} \hlkwb{<-} \hlkwd{compute_l_k}\hlstd{(T_k, h_k, xval[i])(xval[i])}
+\hlstd{\}}
+\hlkwd{points}\hlstd{(xval, lower,} \hlkwc{pch} \hlstd{=} \hlstr{"."}\hlstd{,} \hlkwc{col} \hlstd{=} \hlstr{"yellow"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-chunck15} 
+
+}
+
+
+
+\end{knitrout}
+
+
+Finally, we'd like to test the area function that computes each exponentiated trapezoid underneath the piece-wise upper bound $u_x$. Let us initialize our area function, entitled "$A()$".
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{### Function A computes area between i-1 and i in z_k}
+\hlstd{A} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{i}\hlstd{,} \hlkwc{data}\hlstd{) \{}
+    \hlkwd{with}\hlstd{(data, \{}
+        \hlstd{a} \hlkwb{<-} \hlstd{h_k_prime[i]}
+        \hlstd{b} \hlkwb{<-} \hlstd{h_k[i]} \hlopt{-} \hlstd{T_k[i]} \hlopt{*} \hlstd{a}
+        \hlkwa{if} \hlstd{(a} \hlopt{==} \hlnum{0}\hlstd{) \{}
+            \hlkwd{return}\hlstd{(}\hlkwd{exp}\hlstd{(b)} \hlopt{*} \hlstd{(z_k[i]} \hlopt{-} \hlstd{z_k[i} \hlopt{-} \hlnum{1}\hlstd{]))}
+        \hlstd{\}} \hlkwa{else if} \hlstd{(i} \hlopt{==} \hlnum{1}\hlstd{) \{}
+            \hlkwd{return}\hlstd{(}\hlopt{-}\hlstd{(}\hlkwd{exp}\hlstd{(a} \hlopt{*} \hlstd{T_k[}\hlnum{1}\hlstd{]} \hlopt{+} \hlstd{b)} \hlopt{-} \hlkwd{exp}\hlstd{(a} \hlopt{*} \hlstd{z_k[}\hlnum{1}\hlstd{]} \hlopt{+} \hlstd{b))}\hlopt{/}\hlstd{a)}
+        \hlstd{\}} \hlkwa{else} \hlstd{\{}
+            \hlkwd{return}\hlstd{(}\hlopt{-}\hlstd{(}\hlkwd{exp}\hlstd{(a} \hlopt{*} \hlstd{z_k[i} \hlopt{-} \hlnum{1}\hlstd{]} \hlopt{+} \hlstd{b)} \hlopt{-} \hlkwd{exp}\hlstd{(a} \hlopt{*} \hlstd{z_k[i]} \hlopt{+} \hlstd{b))}\hlopt{/}\hlstd{a)}
+        \hlstd{\}}
+    \hlstd{\})}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Let us say we are interested in the $2^{nd}$ trapezoid (note: $k=5$, thus $T_k$ has 5 elements and $z_k$ has 4 meaningful elements). In light of the above log standard normal example, the $2^{nd}$ trapezoid has an area equal to integrating on the log standard normal curve from $z_k[1]$ to $z_k[2]$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{composite} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{c}\hlstd{,} \hlkwc{d}\hlstd{)} \hlkwa{function}\hlstd{(}\hlkwc{...}\hlstd{)} \hlkwd{c}\hlstd{(}\hlkwd{d}\hlstd{(...))}
+\hlstd{c} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{compute_u_k}\hlstd{(data, T_k[}\hlnum{2}\hlstd{])}
+\hlstd{d} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{exp}\hlstd{(x)}
+\hlstd{e} \hlkwb{<-} \hlkwd{composite}\hlstd{(f, g)}
+\hlkwd{integrate}\hlstd{(e, z_k[}\hlnum{1}\hlstd{], z_k[}\hlnum{2}\hlstd{])}
+\end{alltt}
+\begin{verbatim}
+## -72.3 with absolute error < 8e-13
+\end{verbatim}
+\begin{alltt}
+## Whoops. This area should be positive as integrant is exp
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+We see that $integrate()$ cannot run on composite function in r. Hence, we have to approximate the area underneath exponentiated piece-wise upper bound $u_k$ ourselves. From below, we see that particular line segment of the $2^{nd}$ trapezoid is $y = 5 \times x + 11.58106$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{h_k_prime[}\hlnum{2}\hlstd{]}
+\end{alltt}
+\begin{verbatim}
+## [1] 5
+\end{verbatim}
+\begin{alltt}
+\hlstd{T_k[}\hlnum{2}\hlstd{]}
+\end{alltt}
+\begin{verbatim}
+## [1] -5
+\end{verbatim}
+\begin{alltt}
+\hlstd{h_k[}\hlnum{2}\hlstd{]}
+\end{alltt}
+\begin{verbatim}
+## [1] -13.42
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+By the following math, we are able to compute each of the exponentiated trapezoid. $\int_{z_k[1]}^{z_k[2]} \mathrm{e}^{5 \times x + 11.58106}\,\mathrm{d}x = \frac{1}{5}e^{5 \times x + 11.58106} |_{z_k[1]}^{z_k[2]}$.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{(}\hlkwd{exp}\hlstd{(}\hlnum{5} \hlopt{*} \hlstd{z_k[}\hlnum{2}\hlstd{]} \hlopt{+} \hlnum{11.58106}\hlstd{)} \hlopt{-} \hlkwd{exp}\hlstd{(}\hlnum{5} \hlopt{*} \hlstd{z_k[}\hlnum{1}\hlstd{]} \hlopt{+} \hlnum{11.58106}\hlstd{))}\hlopt{/}\hlnum{5}
+\end{alltt}
+\begin{verbatim}
+## [1] 0.07979
+\end{verbatim}
+\begin{alltt}
+\hlkwd{A}\hlstd{(}\hlnum{2}\hlstd{, data)}
+\end{alltt}
+\begin{verbatim}
+## [1] 0.07979
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+
+It proves that our area function works good. Note that as we approximate, we are doing multiplications which result in a loss of precision. Finally, we put the pieces together and update our data frame.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(T_k)) \{}
+    \hlstd{A_k[i]} \hlkwb{<-} \hlkwd{A}\hlstd{(i, data)}
+\hlstd{\}}
+\hlstd{data}\hlopt{$}\hlstd{A_k} \hlkwb{<-} \hlstd{A_k}  \hlcom{# update A_k in data frame}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\section{Sampling and Updating}
+The sampling and updating steps are performed in a while loop. While desired the sample size \texttt{n} is not reached, the function continue to sample and update if needed. In the sampling step, we first need to find the cumulative areas under each piece-wise curve $s_{k}(x)$ from $z_{j-1}$ to $z_{j}$. The \texttt{sample\_val()} function will return a vector of $x^{*}$ and $u^{*}$ sampled. Then we need to compute $u_{k}(x^{*})$ and $l_{k}(x^{*})$ and pass these parameters into \texttt{squeeze\_test} and \texttt{rejection\_test}. If squeeze test fails and $h_{k}(x^{*})$ is evaluated, then we need to add this point $x^{*}$ into our initial set of $x$'s $T_{k}$, and update all the changes accordingly with the \texttt{update()} function.
+
+\subsection{Sampling}
+Now we have $k=5$ initial points in $T_{k}$ and $k$ tangent lines which intersect at $z_{j}, j=1,...,k-1$. These partition our area under the curve $s_k(x)$ into $k$ pieces, each including one point in $T_{k}$. For example, piece $j$ under the curve contains $x_{j}$, and its bounds are $z_{j-1}$ and $z_{j}$. We want to sample an $x^{*}$ from the curve $s_{k}(x)$, and a random number $u^{*}$ from \texttt{uniform(0,1)}.
+
+\begin{enumerate}
+  \item To sample an $x^{*}$ from $s_k(x)$, we are going to do this in two steps:
+  \begin{itemize}
+    \item Sample one piece from the $k$ pieces using a random number $u^{'}$: 
+    
+    In order to do this, we need to calculate the total area under the curve and sample a uniform number $u^{'}$ from $(0, sum(Area))$. So this uniform number now is the area we want to cover with our sample $x^{*}$, i.e., we want $\int_{xlb}^{x^{*}}s_{k}(x)dx=u^{'}$. Given the cumulative area ($cumArea[j]$) for each piece $j$, we can tell by the value of $u^{'}$ which range $x^{*}$ will be in.
+    \item Solving for $x^{*}$ in the chosen area:
+    
+    The next step would be to find the cdf of $s_{k}(x)$, and solve $cdf(x)=u$ for $x^{*}$ within the range. Since our $s_{k}(x)$ is piece-wise, our actual computation for $x^{*}$ is actually slightly different. The area we want to cover in a specific range can be expressed as $u^{'}-cumArea[j-1]$, and we then solve for $x^{*}$ such that $\int_{z_{j-1}}^{x^{*}}s_{k}(x)dx=u^{'}-cumArea[j-1]$. By doing all the algebra, we are able to find a closed form of $x^{*}$ depending on the slope $a$ and intercept $b$ of $u_{k}(x)$, $x_{j-1}$ and $u^{'}-cumArea[j-1]$. We want to solve $x^{*}$ where $\int_{z_{j-1}}^{x^{*}}s_{k}(x)=u^{'}-cumArea[j-1]$.
+    
+    By doing the integral, we get
+    
+    $$\frac{e^{ax+b}}{a}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[j-1]$$ where $$a=h^{'}(x_{j}), b=h(x_{j})-ax_{j}$$
+    
+    Expanding everything out and reorganizing the equation, we have:
+    
+    $$x^{*}=\frac{log[e^{az_{j-1}+1}+(u^{'}-cumArea[j-1])a]-b}{a}$$
+    
+    Note that we have two special cases here. When $i=1$, our starting value for $x^{*}$ is $T_k[1]$, since $z_{0}$ is not defined in our vector of $z_{j}$. Also, when the slope of $u_k(x)$ is zero for the chosen piece, we need to handle the algebra a little different.
+    
+    When the slope is zero, $e^{b}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[j-1]$.
+    
+    $$x^{*}=e^{b}(u^{'}-cumArea[j-1])+z_{j-1}$$
+  \end{itemize}
+  \item Then sample $u^{*}$ from \texttt{uniform(0,1)}, which we would make use of in the squeezing and rejection tests. Finally, the \texttt{sample\_val()} function returns our sampled $x^{*}$ and $u^{*}$ to the parent function \texttt{ars()}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{sample_val} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{data}\hlstd{,} \hlkwc{cumArea}\hlstd{) \{}
+    \hlkwd{with}\hlstd{(data, \{}
+        \hlcom{# sample x*: CDF(x*)=temp-cumArea}
+        \hlstd{temp} \hlkwb{<-} \hlkwd{runif}\hlstd{(}\hlnum{1}\hlstd{)} \hlopt{*} \hlkwd{sum}\hlstd{(A_k)}
+        \hlstd{k} \hlkwb{<-} \hlkwd{length}\hlstd{(T_k)}
+        \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{k) \{}
+            \hlstd{a} \hlkwb{<-} \hlstd{h_k_prime[i]}
+            \hlstd{b} \hlkwb{<-} \hlstd{h_k[i]} \hlopt{-} \hlstd{T_k[i]} \hlopt{*} \hlstd{a}
+            \hlkwa{if} \hlstd{(i} \hlopt{==} \hlnum{1} \hlopt{&&} \hlstd{temp} \hlopt{<} \hlstd{cumArea[}\hlnum{1}\hlstd{]) \{}
+                \hlstd{x_star} \hlkwb{<-} \hlstd{(}\hlkwd{log}\hlstd{(}\hlkwd{exp}\hlstd{(a} \hlopt{*} \hlstd{T_k[}\hlnum{1}\hlstd{]} \hlopt{+} \hlstd{b)} \hlopt{+} \hlstd{temp} \hlopt{*} \hlstd{a)} \hlopt{-} \hlstd{b)}\hlopt{/}\hlstd{a}
+                \hlkwa{break}
+            \hlstd{\}} \hlkwa{else if} \hlstd{(temp} \hlopt{>=} \hlstd{cumArea[i} \hlopt{-} \hlnum{1}\hlstd{]} \hlopt{&&} \hlstd{temp} \hlopt{<} \hlstd{cumArea[i]) \{}
+                \hlkwa{if} \hlstd{(a} \hlopt{==} \hlnum{0}\hlstd{) \{}
+                  \hlstd{x_star} \hlkwb{<-} \hlstd{(temp} \hlopt{-} \hlstd{cumArea[i} \hlopt{-} \hlnum{1}\hlstd{])}\hlopt{/}\hlkwd{exp}\hlstd{(b)} \hlopt{+} \hlstd{z_k[i} \hlopt{-} \hlnum{1}\hlstd{]}
+                  \hlkwa{break}
+                \hlstd{\}}
+                \hlstd{x_star} \hlkwb{<-} \hlstd{(}\hlkwd{log}\hlstd{(}\hlkwd{exp}\hlstd{(a} \hlopt{*} \hlstd{z_k[i} \hlopt{-} \hlnum{1}\hlstd{]} \hlopt{+} \hlstd{b)} \hlopt{+} \hlstd{(temp} \hlopt{-} \hlstd{cumArea[i} \hlopt{-} \hlnum{1}\hlstd{])} \hlopt{*} \hlstd{a)} \hlopt{-} \hlstd{b)}\hlopt{/}\hlstd{a}
+                \hlkwa{break}
+            \hlstd{\}}
+        \hlstd{\}}
+        \hlcom{# sample u* from uniform(0,1)}
+        \hlstd{u_star} \hlkwb{<-} \hlkwd{runif}\hlstd{(}\hlnum{1}\hlstd{)}
+        \hlkwd{return}\hlstd{(}\hlkwd{c}\hlstd{(x_star, u_star))}
+    \hlstd{\})}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\end{enumerate}
+
+\subsection{Squeezing Test and Rejection Test}
+With $x^{*}$, $u^{*}$ and the values of $u_k(x)$ and $l_k(x)$ evaluated at $x^{*}$, we can now perform the squeezing test. If the squeezing test returns TRUE, then $x^{*}$ will be accepted and stored in our sample vector. Otherwise, $h_k(x^{*})$ will be evaluated and the rejection test will be performed. If the rejection test is passed, $x^{*}$ will be added into the sample vector.
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{squeeze_test} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x_star}\hlstd{,} \hlkwc{u_star}\hlstd{,} \hlkwc{l_xstar}\hlstd{,} \hlkwc{u_xstar}\hlstd{) \{}
+    \hlstd{test} \hlkwb{<-} \hlkwd{exp}\hlstd{(l_xstar} \hlopt{-} \hlstd{u_xstar)}
+    \hlstd{Boolean} \hlkwb{<-} \hlkwd{ifelse}\hlstd{(u_star} \hlopt{<=} \hlstd{test, T, F)}
+    \hlcom{# T=accept, F=reject}
+    \hlkwd{return}\hlstd{(Boolean)}
+\hlstd{\}}
+\hlstd{rejection_test} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x_star}\hlstd{,} \hlkwc{u_star}\hlstd{,} \hlkwc{u_xstar}\hlstd{,} \hlkwc{h_xstar}\hlstd{) \{}
+    \hlstd{test} \hlkwb{<-} \hlkwd{exp}\hlstd{(h_xstar} \hlopt{-} \hlstd{u_xstar)}
+    \hlstd{Boolean} \hlkwb{<-} \hlkwd{ifelse}\hlstd{(u_star} \hlopt{<=} \hlstd{test, T, F)}
+    \hlkwd{return}\hlstd{(Boolean)}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\subsection{Updating}
+The code for the updating part is listed below (function \texttt{update()}):
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{update} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x_star}\hlstd{,} \hlkwc{data}\hlstd{,} \hlkwc{u_k}\hlstd{,} \hlkwc{l_k}\hlstd{,} \hlkwc{h}\hlstd{) \{}
+    \hlkwd{with}\hlstd{(data, \{}
+        \hlstd{T_k} \hlkwb{<-} \hlkwd{sort}\hlstd{(}\hlkwd{append}\hlstd{(data}\hlopt{$}\hlstd{T_k, x_star))}
+        \hlstd{position} \hlkwb{<-} \hlstd{(}\hlkwd{which}\hlstd{(T_k} \hlopt{==} \hlstd{x_star)} \hlopt{-} \hlnum{1}\hlstd{)}
+        \hlstd{h_k} \hlkwb{<-} \hlkwd{append}\hlstd{(data}\hlopt{$}\hlstd{h_k,} \hlkwd{compute_h_k}\hlstd{(x_star, h),} \hlkwc{after} \hlstd{= position)}
+        \hlstd{h_k_prime} \hlkwb{<-} \hlkwd{append}\hlstd{(data}\hlopt{$}\hlstd{h_k_prime,} \hlkwd{grad}\hlstd{(h, x_star),} \hlkwc{after} \hlstd{= position)}
+        \hlstd{z_k} \hlkwb{<-} \hlkwd{compute_z_k}\hlstd{(T_k, h_k, h_k_prime)}
+        \hlstd{z_k} \hlkwb{<-} \hlkwd{c}\hlstd{(z_k,} \hlkwd{tail}\hlstd{(T_k,} \hlkwc{n} \hlstd{=} \hlnum{1}\hlstd{))}
+        \hlstd{A_k} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlnum{0}\hlstd{,} \hlkwc{length} \hlstd{=} \hlkwd{length}\hlstd{(T_k))}
+        \hlstd{data} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(T_k, h_k, h_k_prime, z_k, A_k)}
+        \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(T_k)) \{}
+            \hlstd{A_k[i]} \hlkwb{<-} \hlkwd{A}\hlstd{(i, data)}
+        \hlstd{\}}
+        \hlstd{data}\hlopt{$}\hlstd{A_k} \hlkwb{<-} \hlstd{A_k}
+        \hlkwd{return}\hlstd{(data)}
+    \hlstd{\})}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+When $h(x^{*})$ and $h^{'}(x^{*})$ were evaluated, we need to update the data frame we had, namely, to add the $x^{*}$ into the $T_{k}$ vector so that the number of elements in $T_{k}$ goes from $k$ to $k+1$. To do so, $x^{*}$ is appended into the $T_{k}$ vector and then the vector is sorted. The position of the new $x^{*}$ is then recorded so that vectors $h\_k$, $h\_k\_prime$, $z\_k$ and $A\_k$ were all updated. Finally, $cumArea$ was updated as well based on the new $A\_k$ vector.
+
+\section{Checking Validity}
+\subsection{Checking Log-concavity}
+When the user inputs the desired function, it is hard to check whether the input function is log-concave or not. Instead of writing an algorithm to check the log-concavity at this stage, we performed a bounding-check at each update. More specifically, when the data frame is updated, we will check on the mid-points of $T_{k}$, in terms of whether or not the upper and lower bounds are really bounding the values of the log-density, or in other words, we wish to have (for all the mid-points of $T_{k}$):
+
+$$u(x)\geq h(x), l(x)\leq h(x)$$
+
+If the data did not pass the test, a warning will be displayed and the \texttt{ars()} will stop processing. All of the above was done in function \texttt{check\_concave()}:
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{check_concave} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{data}\hlstd{,} \hlkwc{h}\hlstd{) \{}
+    \hlstd{sample_points} \hlkwb{<-} \hlkwd{vector}\hlstd{()}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{(}\hlkwd{length}\hlstd{(data}\hlopt{$}\hlstd{T_k)} \hlopt{-} \hlnum{1}\hlstd{)) \{}
+        \hlstd{sample_points[i]} \hlkwb{<-} \hlkwd{mean}\hlstd{(}\hlkwd{c}\hlstd{(data}\hlopt{$}\hlstd{T_k[i], data}\hlopt{$}\hlstd{T_k[i} \hlopt{+} \hlnum{1}\hlstd{]))}
+    \hlstd{\}}
+    \hlstd{u_k} \hlkwb{<-} \hlkwd{vector}\hlstd{()}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(sample_points)) \{}
+        \hlstd{u_k[i]} \hlkwb{<-} \hlkwd{compute_u_k}\hlstd{(data, sample_points[i])(sample_points[i])}
+    \hlstd{\}}
+    \hlstd{l_k} \hlkwb{<-} \hlkwd{vector}\hlstd{()}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(sample_points)) \{}
+        \hlstd{l_k[i]} \hlkwb{<-} \hlkwd{compute_l_k}\hlstd{(data}\hlopt{$}\hlstd{T_k, data}\hlopt{$}\hlstd{h_k, sample_points[i])(sample_points[i])}
+    \hlstd{\}}
+    \hlkwd{return}\hlstd{(}\hlkwd{sum}\hlstd{((}\hlkwd{sum}\hlstd{(u_k} \hlopt{<} \hlkwd{h}\hlstd{(sample_points))} \hlopt{==} \hlnum{0}\hlstd{)} \hlopt{+} \hlstd{(}\hlkwd{sum}\hlstd{(l_k} \hlopt{>} \hlkwd{h}\hlstd{(sample_points))} \hlopt{==} \hlnum{0}\hlstd{))} \hlopt{==}
+        \hlnum{2}\hlstd{)}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\subsection{Checking User Input}
+When user inputs the arguments to the \texttt{ars()} function, we have to make sure that the inputs are reasonable values. Namely, we will check the following items:
+\begin{itemize}
+  \item The sample size $n$ is an integer and is sufficiently large ($>5$ in our case)
+  \item The density function $g$ is a function
+  \item The upper bound $xub$ is larger than or equal to the lower bound $xlb$
+\end{itemize}
+This part was done using the following code:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{check_input} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{g}\hlstd{,} \hlkwc{n}\hlstd{,} \hlkwc{xlb}\hlstd{,} \hlkwc{xub}\hlstd{) \{}
+    \hlkwa{if} \hlstd{((n} \hlopt{<} \hlnum{5}\hlstd{)} \hlopt{||} \hlstd{(n}\hlopt{%%}\hlnum{1} \hlopt{!=} \hlnum{0}\hlstd{)) \{}
+        \hlkwd{warning}\hlstd{(}\hlstr{"Sample size must be a bigger integer"}\hlstd{)}
+        \hlkwd{return}\hlstd{()}
+    \hlstd{\}}
+    \hlkwa{if} \hlstd{(xlb} \hlopt{>=} \hlstd{xub) \{}
+        \hlkwd{warning}\hlstd{(}\hlstr{"Lower bound must be smaller than the upper bound"}\hlstd{)}
+        \hlkwd{return}\hlstd{()}
+    \hlstd{\}}
+    \hlkwa{if} \hlstd{(}\hlkwd{typeof}\hlstd{(g)} \hlopt{!=} \hlstr{"closure"}\hlstd{) \{}
+        \hlkwd{warning}\hlstd{(}\hlstr{"Input density is not a function"}\hlstd{)}
+        \hlkwd{return}\hlstd{()}
+    \hlstd{\}}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+
+\section{Testing}
+We tested our function \texttt{ars()} with different inputs, especially with different log-concave and non log-concave functions. Also we tested the \texttt{ars()} function where the inputs are not valid.
+
+\subsection{Testing on Log-concave Functions}
+\subsubsection{Standard normal}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-Inf$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{1}{\sqrt{2\pi}}e^{-\frac{x^{2}}{2}}$$
+Some summary statistics of the sampled values are listed below:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp01<-\hlkwd{ars}(g,n=20000,xlb=-Inf,xub=Inf)
+>   \hlkwd{summary}(samp01)
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-4.976000 -0.675600 -0.004458  0.000150  0.681500  3.905000
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-plot_standard_normal2} 
+
+}
+
+
+
+\end{knitrout}
+
+
+\subsubsection{Standard normal kernel with mean = 3}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-1$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=e^{-\frac{(x-3)^{2}}{2}}$$
+Note that in this case since the density function is not normalized, the actual plot of the function will be deviated from the frequency histogram of the samples.
+Some summary statistics of the sampled values are listed below:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp001<-\hlkwd{ars}(g,n=20000,xlb=-1,xub=Inf)
+>   \hlkwd{summary}(samp001)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-0.9564  2.3110  2.9960  2.9980  3.6830  6.5580 
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-plot_normal_kernel} 
+
+}
+
+
+
+\end{knitrout}
+
+
+\subsubsection{Gamma(2,2)}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=0.25xe^{-\frac{x}{2}}$$
+Some summary statistics of the sampled values are listed below:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp02<-\hlkwd{ars}(g,n=20000,xlb=.01,xub=Inf)
+>   \hlkwd{summary}(samp02)
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+ 0.02073  1.90700  3.29100  3.81400  5.23600 12.00000
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-plot_gamma} 
+
+}
+
+
+
+\end{knitrout}
+
+
+\subsubsection{Unnormalized Gamma(3,2) Kernel}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=x^{2}e^{-\frac{x}{2}}$$
+Again, since the density function is not normalized, the actual plot of the function will be deviated from the frequency histogram of the samples.
+Some summary statistics of the sampled values are listed below:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp003<-\hlkwd{ars}(g,n=20000,xlb=.01,xub=Inf)
+>   \hlkwd{summary}(samp003)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.1387  3.3790  5.2050  5.6440  7.4800 14.0000 
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-plot_gamma_kernel} 
+
+}
+
+
+
+\end{knitrout}
+
+
+\subsubsection{Beta(2,2) Kernel}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=0.99$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{x(1-x)}{beta(2,2)}$$
+Some summary statistics of the sampled values are listed below:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp04<-\hlkwd{ars}(g,n=20000,xlb=.01,xub=.99)
+>   \hlkwd{summary}(samp04)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0102  0.3285  0.4978  0.4984  0.6708  0.9899 
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-plot_beta_kernel} 
+
+}
+
+
+
+\end{knitrout}
+
+
+\subsection{Testing on Non Log-concave Functions}
+\subsubsection{Normal mixture}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{2}{\sqrt{2\pi}}e^{-\frac{(x-4)^{2}}{2}} + \frac{1}{\sqrt{2\pi}}e^{-\frac{x^{2}}{2}}$$
+The true density function looks like follows:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-plot_normal_mixture} 
+
+}
+
+
+
+\end{knitrout}
+
+Since this is not a log-concave function, we would expect an error when executing the \texttt{ars()} function:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   sample05<-\hlkwd{ars}(g,n=20000,xlb=.01,xub=Inf)
+Warning message:
+In \hlkwd{ars}(g, n = 20000, xlb = 0.01, xub = Inf) : Input function not concave!
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\subsection{Testing on Bad Lower Bound/Upper Bound Input}
+\subsubsection{Undefined domain of a kernel/density: beta with xlb and xub out of range}
+Sometimes the inputted lower/upper bound does not give a domain where the actual density is defined. For example, the following input failed to fall within the domain of a Beta(2,2) distribution defined on $[0,1]$, thus resulted in a warning message:
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-1$
+  \item $xub=1$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{x(1-x)}{beta(2,2)}$$
+The density was plotted below with the inputted domain range highlighted:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/minimal-bad_lower_upper_bound} 
+
+}
+
+
+
+\end{knitrout}
+
+It's not surprising that we will have a warning message if we execute the \texttt{ars()} function with these inputs:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp04d<-\hlkwd{ars}(g,n=20000,xlb=-1,xub=1)
+Warning message:
+In \hlkwd{ars}(g, n = 20000, xlb = -1, xub = 1) :
+  Mode not found in range. Please check your kernel/density or change xlb/xub.
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\subsection{Testing on a Uniform Density}
+In the case where we are sampling from a uniform density, a warning message will be displayed to inform the user to use \texttt{runif()} function instead.
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-1$
+  \item $xub=1$
+\end{itemize}
+The density is given by:
+$$f(x)=1$$
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   sampu<-\hlkwd{ars}(g,n=20000,xlb=-1,xub=1)
+Warning message:
+In \hlkwd{ars}(g, n = 20000, xlb = -1, xub = 1) :
+  Your kernel is uniform, please sample with \hlkwd{runif}() instead.
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\subsection{Testing on a General Bad Input}
+In this case, the user tried to sample from a Beta(2,2) distribution defined on $[0,1]$ with an input range being $[-1,1]$. Also, he specified the number of samples $n$ to be 2.5, which is not an integer. In this case, our \texttt{ars()} function will return two warning messages:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+>   samp04d<-\hlkwd{ars}(g,n=2.5,xlb=-1,xub=1)
+Warning messages:
+1: In \hlkwd{check_input}(g, n, xlb, xub) : Sample size must be a bigger integer
+2: In \hlkwd{ars}(g, n = 2.5, xlb = -1, xub = 1) :
+  Mode not found in range. Please check your kernel/density or change xlb/xub.
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\section{Individual Team Member Contributions}
+\begin{tabular}{lrrr}
+\hline
+Name & Contributions &\\
+\hline
+Xi (Edward) Cai & Initializing functions for T\_k, h\_k, h\_k\_prime, z\_k, Area A\_k, u\_k, l\_k &\\
+Zhiwei (Cindy) Cai &Sampling and Squeezing/Rejection testing functions; test() function &\\
+Zixiao Chen &Updating function, inputs and log-concavity checking functions &\\
+\hline
+\\
+\end{tabular}
+\\
+
+
+
+\end{document}
