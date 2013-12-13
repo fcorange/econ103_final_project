@@ -177,7 +177,7 @@ ars<-function(g,n,xlb,xub){
   h <- function(x) (return(log(g(x))))            # Function h = log(g)
   mode <- try(optim(0,h, upper=xub, lower =xlb, control=list(fnscale=-1),method="L-BFGS-B")[1],silent=T)
   if (class(mode)=="try-error"){
-    warning("The given kernel/density is not defined on the domain specified, please change xlb/xub.")
+    warning("Mode not found in range. Please check your kernel/density or change xlb/xub.")
     return()
   }
   if (xub == Inf){
