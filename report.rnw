@@ -1,0 +1,70 @@
+%% LyX 2.0.6 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass{article}
+\usepackage[sc]{mathpazo}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{url}
+\usepackage[unicode=true,pdfusetitle,
+ bookmarks=true,bookmarksnumbered=true,bookmarksopen=true,bookmarksopenlevel=2,
+ breaklinks=false,pdfborder={0 0 1},backref=false,colorlinks=false]
+ {hyperref}
+\hypersetup{
+ pdfstartview={XYZ null null 1}}
+\usepackage{breakurl}
+\begin{document}
+
+<<setup, include=FALSE, cache=FALSE>>=
+library(knitr)
+# set global chunk options
+opts_chunk$set(fig.path='figure/minimal-', fig.align='center', fig.show='hold')
+options(replace.assign=TRUE,width=90)
+@
+
+\title{Stat 243 Final Project}
+
+\author{Zixiao Chen}
+
+\maketitle
+
+\section{Sampling and Updating}
+The sampling and updating steps are performed in a while loop. While desired the sample size \texttt{n} is not reached, the function continue to sample and update if needed. In the sampling step, we first need to find the cumulative areas under each piece-wise curve $s_{k}(x)$ from $z_{j-1}$ to $z_{j}$. The \texttt{sample\_val()} function will return a vector of $x^{*}$ and $u^{*}$ sampled. Then we need to compute $u_{k}(x^{*})$ and $l_{k}(x^{*})$ and pass these parameters into \texttt{squeeze\_test} and \texttt{rejection\_test}. If squeeze test fails and $h_{k}(x^{*})$ is evaluated, then we need to add this point $x^{*}$ into our initial set of $x$'s $T_{k}$, and update all the changes accordingly with the \texttt{update()} function.
+
+\subsection{Sampling}
+Now we have $k=5$ initial points in $T_{k}$ and $k$ tangent lines which intersect at $z_{j}, j=1,...,k-1$. These partition our area under the curve $s_k(x)$ into $k$ pieces, each including one point in $T_{k}$. For example, piece $j$ under the curve contains $x_{j}$, and its bounds are $z_{j-1}$ and $z_{j}$. We want to sample an $x^{*}$ from the curve $s_{k}(x)$, and a random number $u^{*}$ from \texttt{uniform(0,1)}.
+
+\begin{enumerate}
+  \item To sample an $x^{*}$ from $s_k(x)$, we are going to do this in two steps:
+  \begin{itemize}
+    \item Sample one piece from the $k$ pieces using a random number $u^{'}$: 
+    
+    In order to do this, we need to calculate the total area under the curve and sample a uniform number $u^{'}$ from $(0, sum(Area))$. So this uniform number now is the area we want to cover with our sample $x^{*}$, i.e., we want $\int_{xlb}^{x^{*}}s_{k}(x)dx=u^{'}$. Given the cumulative area ($cumArea[i]$) for each piece $i$, we can tell by the value of $u^{'}$ which range $x^{*}$ will be in.
+    \item Solving for $x^{*}$ in the chosen area:
+    
+    The next step would be to find the cdf of $s_{k}(x)$, and solve $cdf(x)=u$ for $x^{*}$ within the range. Since our $s_{k}(x)$ is piece-wise, our actual computation for $x^{*}$ is actually slightly different. The area we want to cover in a specific range can be expressed as $u^{'}-cumArea[i-1]$, and we then solve for $x^{*}$ such that $\int_{z_{j-1}}^{x^{*}}s_{k}(x)dx=u^{'}-cumArea[i-1]$. By doing all the algebra, we are able to find a closed form of $x^{*}$ depending on the slope $a$ and intercept $b$ of $u_{k}(x)$, $x_{j-1}$ and $u^{'}-cumArea[i-1]$. We want to solve $x^{*}$ where $\int_{z_{j-1}}^{x^{*}}s_{k}(x)=u^{'}-cumArea[i-1]$.
+    
+    By doing the integral, we get
+    
+    $$\frac{e^{ax+b}}{a}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[i-1]$$ where $$a=h^{'}(x_{j}), b=h(x_{j})-ax_{j}$$
+    
+    Expanding everyting out and reorganizing the equation, we have:
+    
+    $$x^{*}=\frac{log[e^{az_{j-1}+1}+(u^{'}-cumArea[i-1])a]-b}{a}$$
+    
+    Note that we have two special cases here. When $i=1$, our starting value for $x^{*}$ is $T_k[1]$, since $z_{0}$ is not defined in our vector of $z_{j}$. Also, when the slope of $u_k(x)$ is zero for the chosen piece, we need to handle the algebra a little different.
+    
+    When the slope is zero, $e^{b}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[i-1]$.
+    
+    $$x^{*}=e^{b}(u^{'}-cumArea[i-1])+z_{j-1}$$
+  \end{itemize}
+  \item Then sample $u^{*}$ from \texttt{uniform(0,1)}, which we would make use of in the squeezing and rejection tests. Finally, the \texttt{sample\_val()} function returns our sampled $x^{*}$ and $u^{*}$ to the parent function \texttt{ars()}
+\end{enumerate}
+
+\subsection{Squeezing Test and Rejection Test}
+With $x^{*}$, $u^{*}$ and the values of $u_k(x)$ and $l_k(x)$ evaluated at $x^{*}$, we can now perform the squeezing test. If the squeezing test returns TRUE, then $x^{*}$ will be accepted and stored in our sample vecotr. Otherwise, $h_k(x^{*})$ will be evaluated and the rejection test will be performed. If the rejection test is passed, $x^{*}$ will be added intot the sample vector.
+
+
+\end{document}
