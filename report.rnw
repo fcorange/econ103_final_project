@@ -26,9 +26,10 @@ options(replace.assign=TRUE,width=90)
 
 \title{Stat 243 Final Project}
 
-\author{Zixiao Chen}
+\author{Xi (Edward) Cai, Zhiwei (Cindy) Cai, Zixiao Chen, }
 
 \maketitle
+\section{Initialization}
 
 \section{Sampling and Updating}
 The sampling and updating steps are performed in a while loop. While desired the sample size \texttt{n} is not reached, the function continue to sample and update if needed. In the sampling step, we first need to find the cumulative areas under each piece-wise curve $s_{k}(x)$ from $z_{j-1}$ to $z_{j}$. The \texttt{sample\_val()} function will return a vector of $x^{*}$ and $u^{*}$ sampled. Then we need to compute $u_{k}(x^{*})$ and $l_{k}(x^{*})$ and pass these parameters into \texttt{squeeze\_test} and \texttt{rejection\_test}. If squeeze test fails and $h_{k}(x^{*})$ is evaluated, then we need to add this point $x^{*}$ into our initial set of $x$'s $T_{k}$, and update all the changes accordingly with the \texttt{update()} function.
@@ -41,31 +42,71 @@ Now we have $k=5$ initial points in $T_{k}$ and $k$ tangent lines which intersec
   \begin{itemize}
     \item Sample one piece from the $k$ pieces using a random number $u^{'}$: 
     
-    In order to do this, we need to calculate the total area under the curve and sample a uniform number $u^{'}$ from $(0, sum(Area))$. So this uniform number now is the area we want to cover with our sample $x^{*}$, i.e., we want $\int_{xlb}^{x^{*}}s_{k}(x)dx=u^{'}$. Given the cumulative area ($cumArea[i]$) for each piece $i$, we can tell by the value of $u^{'}$ which range $x^{*}$ will be in.
+    In order to do this, we need to calculate the total area under the curve and sample a uniform number $u^{'}$ from $(0, sum(Area))$. So this uniform number now is the area we want to cover with our sample $x^{*}$, i.e., we want $\int_{xlb}^{x^{*}}s_{k}(x)dx=u^{'}$. Given the cumulative area ($cumArea[j]$) for each piece $j$, we can tell by the value of $u^{'}$ which range $x^{*}$ will be in.
     \item Solving for $x^{*}$ in the chosen area:
     
-    The next step would be to find the cdf of $s_{k}(x)$, and solve $cdf(x)=u$ for $x^{*}$ within the range. Since our $s_{k}(x)$ is piece-wise, our actual computation for $x^{*}$ is actually slightly different. The area we want to cover in a specific range can be expressed as $u^{'}-cumArea[i-1]$, and we then solve for $x^{*}$ such that $\int_{z_{j-1}}^{x^{*}}s_{k}(x)dx=u^{'}-cumArea[i-1]$. By doing all the algebra, we are able to find a closed form of $x^{*}$ depending on the slope $a$ and intercept $b$ of $u_{k}(x)$, $x_{j-1}$ and $u^{'}-cumArea[i-1]$. We want to solve $x^{*}$ where $\int_{z_{j-1}}^{x^{*}}s_{k}(x)=u^{'}-cumArea[i-1]$.
+    The next step would be to find the cdf of $s_{k}(x)$, and solve $cdf(x)=u$ for $x^{*}$ within the range. Since our $s_{k}(x)$ is piece-wise, our actual computation for $x^{*}$ is actually slightly different. The area we want to cover in a specific range can be expressed as $u^{'}-cumArea[j-1]$, and we then solve for $x^{*}$ such that $\int_{z_{j-1}}^{x^{*}}s_{k}(x)dx=u^{'}-cumArea[j-1]$. By doing all the algebra, we are able to find a closed form of $x^{*}$ depending on the slope $a$ and intercept $b$ of $u_{k}(x)$, $x_{j-1}$ and $u^{'}-cumArea[j-1]$. We want to solve $x^{*}$ where $\int_{z_{j-1}}^{x^{*}}s_{k}(x)=u^{'}-cumArea[j-1]$.
     
     By doing the integral, we get
     
-    $$\frac{e^{ax+b}}{a}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[i-1]$$ where $$a=h^{'}(x_{j}), b=h(x_{j})-ax_{j}$$
+    $$\frac{e^{ax+b}}{a}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[j-1]$$ where $$a=h^{'}(x_{j}), b=h(x_{j})-ax_{j}$$
     
     Expanding everyting out and reorganizing the equation, we have:
     
-    $$x^{*}=\frac{log[e^{az_{j-1}+1}+(u^{'}-cumArea[i-1])a]-b}{a}$$
+    $$x^{*}=\frac{log[e^{az_{j-1}+1}+(u^{'}-cumArea[j-1])a]-b}{a}$$
     
     Note that we have two special cases here. When $i=1$, our starting value for $x^{*}$ is $T_k[1]$, since $z_{0}$ is not defined in our vector of $z_{j}$. Also, when the slope of $u_k(x)$ is zero for the chosen piece, we need to handle the algebra a little different.
     
-    When the slope is zero, $e^{b}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[i-1]$.
+    When the slope is zero, $e^{b}|^{x^{*}}_{z_{j-1}}=u^{'}-cumArea[j-1]$.
     
-    $$x^{*}=e^{b}(u^{'}-cumArea[i-1])+z_{j-1}$$
+    $$x^{*}=e^{b}(u^{'}-cumArea[j-1])+z_{j-1}$$
   \end{itemize}
   \item Then sample $u^{*}$ from \texttt{uniform(0,1)}, which we would make use of in the squeezing and rejection tests. Finally, the \texttt{sample\_val()} function returns our sampled $x^{*}$ and $u^{*}$ to the parent function \texttt{ars()}
+<<code_sample_val, eval=FALSE>>=
+sample_val <- function(data,cumArea) {
+  with(data, {
+    # sample x*: CDF(x*)=temp-cumArea
+    temp<-runif(1)*sum(A_k)
+    k<-length(T_k)
+    for (i in 1:k){
+      a<-h_k_prime[i]
+      b<-h_k[i]-T_k[i]*a
+      if(i==1 && temp<cumArea[1]){
+        x_star<-(log(exp(a*T_k[1]+b)+temp*a)-b)/a
+        break
+      }else if(temp>=cumArea[i-1] && temp<cumArea[i]){
+        if (a==0){
+          x_star<-(temp-cumArea[i-1])/exp(b)+z_k[i-1]
+          break
+        }
+        x_star<-(log(exp(a*z_k[i-1]+b)+(temp-cumArea[i-1])*a)-b)/a
+        break
+      }
+    }
+    # sample u* from uniform(0,1)
+    u_star<-runif(1)
+    return(c(x_star, u_star))
+  })
+}
+@
 \end{enumerate}
 
 \subsection{Squeezing Test and Rejection Test}
-With $x^{*}$, $u^{*}$ and the values of $u_k(x)$ and $l_k(x)$ evaluated at $x^{*}$, we can now perform the squeezing test. If the squeezing test returns TRUE, then $x^{*}$ will be accepted and stored in our sample vecotr. Otherwise, $h_k(x^{*})$ will be evaluated and the rejection test will be performed. If the rejection test is passed, $x^{*}$ will be added intot the sample vector.
+With $x^{*}$, $u^{*}$ and the values of $u_k(x)$ and $l_k(x)$ evaluated at $x^{*}$, we can now perform the squeezing test. If the squeezing test returns TRUE, then $x^{*}$ will be accepted and stored in our sample vector. Otherwise, $h_k(x^{*})$ will be evaluated and the rejection test will be performed. If the rejection test is passed, $x^{*}$ will be added into the sample vector.
+<<code_squeeze_rejection, eval=FALSE>>=
+squeeze_test <- function(x_star, u_star,l_xstar,u_xstar) {
+  test<-exp(l_xstar-u_xstar)
+  Boolean<-ifelse(u_star<=test,T,F)
+  # T=accept, F=reject
+  return(Boolean)
+}
 
+rejection_test <-function(x_star, u_star,u_xstar,h_xstar) {
+  test<-exp(h_xstar-u_xstar)
+  Boolean<-ifelse(u_star<=test,T,F)
+  return(Boolean)
+}
+@
 
 \subsection{Updating}
 The code for the updating part is listed below (function \texttt{update()}):
@@ -92,7 +133,8 @@ update <- function(x_star, data, u_k, l_k,h) {
 
 When $h(x^{*})$ and $h^{'}(x^{*})$ were evaluated, we need to update the data frame we had, namely, to add the $x^{*}$ into the $T_{k}$ vector so that the number of elements in $T_{k}$ goes from $k$ to $k+1$. To do so, $x^{*}$ is appended into the $T_{k}$ vector and then the vector is sorted. The position of the new $x^{*}$ is then recorded so that vectors $h\_k$, $h\_k\_prime$, $z\_k$ and $A\_k$ were all updated. Finally, $cumArea$ was updated as well based on the new $A\_k$ vector.
 
-\subsection{Check Log-concavity}
+\section{Checking Validity}
+\subsection{Checking Log-concavity}
 When the user inputs the desired function, it is hard to check whether the input function is log-concave or not. Instead of writing an algorithm to check the log-concavity at this stage, we performed a bounding-check at each update. More specifically, when the data frame is updated, we will check on the mid-points of $T_{k}$, in terms of whether or not the upper and lower bounds are really bounding the values of the log-density, or in other words, we wish to have (for all the mid-points of $T_{k}$):
 
 $$u(x)\geq h(x), l(x)\leq h(x)$$
@@ -117,7 +159,7 @@ check_concave <- function(data,h) {
 }
 @
 
-\subsection{Check User Input}
+\subsection{Checking User Input}
 When user inputs the arguments to the \texttt{ars()} function, we have to make sure that the inputs are reasonable values. Namely, we will check the following items:
 \begin{itemize}
   \item The sample size $n$ is an integer and is sufficiently large ($>5$ in our case)
@@ -141,6 +183,223 @@ check_input <- function(g,n,xlb,xub) {
   }
 }
 @
+
+
+\section{Testing}
+We tested our function \texttt{ars()} with different inputs, especially with different log-concave and non log-concave functions. Also we tested the \texttt{ars()} function where the inputs are not valid.
+
+\subsection{Testing on Log-concave Functions}
+\subsubsection{Standard normal}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-Inf$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{1}{\sqrt{2\pi}}e^{-\frac{x^{2}}{2}}$$
+Some summary statistics of the sampled values are listed below:
+<<stat_standard_normal, eval=FALSE>>=
+>   samp01<-ars(g,n=20000,xlb=-Inf,xub=Inf)
+>   summary(samp01)
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-4.976000 -0.675600 -0.004458  0.000150  0.681500  3.905000
+@
+
+<<plot_standard_normal, echo=FALSE, fig.width=5, fig.height=5>>=
+hist(samp01, main="Sampling from standard normal", xlab="Sampled values", freq=FALSE)
+xaxis <- seq(-5,5,0.001)
+lines(xaxis, g1(xaxis), pch=".", col="red")
+legend(-4.5,0.38, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+@
+
+\subsubsection{Standard normal kernel with mean = 3}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-1$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=e^{-\frac{(x-3)^{2}}{2}}$$
+Note that in this case since the density function is not normalized, the actual plot of the function will be deviated from the frequency histogram of the samples.
+Some summary statistics of the sampled values are listed below:
+<<stat_normal_kernel, eval=FALSE>>=
+>   samp001<-ars(g,n=20000,xlb=-1,xub=Inf)
+>   summary(samp001)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-0.9564  2.3110  2.9960  2.9980  3.6830  6.5580 
+@
+
+<<plot_normal_kernel, echo=FALSE, fig.width=5, fig.height=5>>=
+hist(samp001, main="Sampling from normal kernel with mean = 3", xlab="Sampled values", freq=FALSE, ylim=c(0,1))
+xaxis <- seq(-1,6,0.001)
+lines(xaxis, g2(xaxis), pch=".", col="red")
+legend(-0.7,0.9, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+@
+
+\subsubsection{Gamma(2,2)}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=0.25xe^{-\frac{x}{2}}$$
+Some summary statistics of the sampled values are listed below:
+<<stat_gamma, eval=FALSE>>=
+>   samp02<-ars(g,n=20000,xlb=.01,xub=Inf)
+>   summary(samp02)
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+ 0.02073  1.90700  3.29100  3.81400  5.23600 12.00000
+@
+
+<<plot_gamma, echo=FALSE, fig.width=5, fig.height=5>>=
+hist(samp02, main="Sampling from Gamma(2,2)", xlab="Sampled values", freq=FALSE)
+xaxis <- seq(0,12,0.001)
+lines(xaxis, g3(xaxis), pch=".", col="red")
+legend(8,0.16, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+@
+
+\subsubsection{Unnormalized Gamma(3,2) Kernel}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=x^{2}e^{-\frac{x}{2}}$$
+Again, since the density function is not normalized, the actual plot of the function will be deviated from the frequency histogram of the samples.
+Some summary statistics of the sampled values are listed below:
+<<stat_gamma_kernel, eval=FALSE>>=
+>   samp003<-ars(g,n=20000,xlb=.01,xub=Inf)
+>   summary(samp003)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.1387  3.3790  5.2050  5.6440  7.4800 14.0000 
+@
+
+<<plot_gamma_kernel, echo=FALSE, fig.width=5, fig.height=5>>=
+hist(samp003, main="Sampling from a unnormalized Gamma(3,2) kernel", xlab="Sampled values", freq=FALSE, ylim = c(0,2.2))
+xaxis <- seq(0,14,0.001)
+lines(xaxis, g4(xaxis), pch=".", col="red")
+legend(8,2, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+@
+
+\subsubsection{Beta(2,2) Kernel}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=0.99$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{x(1-x)}{beta(2,2)}$$
+Some summary statistics of the sampled values are listed below:
+<<stat_beta_kernel, eval=FALSE>>=
+>   samp04<-ars(g,n=20000,xlb=.01,xub=.99)
+>   summary(samp04)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0102  0.3285  0.4978  0.4984  0.6708  0.9899 
+@
+
+<<plot_beta_kernel, echo=FALSE, fig.width=5, fig.height=5>>=
+hist(samp04, main="Sampling from a Beta(2,2) kernel", xlab="Sampled values", freq=FALSE, ylim = c(0,2.2))
+xaxis <- seq(0,1,0.001)
+lines(xaxis, g5(xaxis), pch=".", col="red")
+legend(0,1.8, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+@
+
+\subsection{Testing on Non Log-concave Functions}
+\subsubsection{Normal mixture}
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=0.01$
+  \item $xub=Inf$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{2}{\sqrt{2\pi}}e^{-\frac{(x-4)^{2}}{2}} + \frac{1}{\sqrt{2\pi}}e^{-\frac{x^{2}}{2}}$$
+The true density function looks like follows:
+<<plot_normal_mixture, echo=FALSE, fig.width=5, fig.height=5>>=
+xaxis <- seq(-5,5,0.001)
+plot(xaxis, g6(xaxis), pch=".", col="red", main="Sampling from a normal mixture", xlab="Values", ylab="Density")
+legend(-4.5,0.75, col=c("red"),lty=1,legend=c("True Function Value"),cex=0.6)
+@
+Since this is not a log-concave function, we would expect an error when executing the \texttt{ars()} function:
+<<output_normal_mixture, eval=FALSE>>=
+>   sample05<-ars(g,n=20000,xlb=.01,xub=Inf)
+Warning message:
+In ars(g, n = 20000, xlb = 0.01, xub = Inf) : Input function not concave!
+@
+
+\subsection{Testing on Bad Lower Bound/Upper Bound Input}
+\subsubsection{Undefined domain of a kernel/density: beta with xlb and xub out of range}
+Sometimes the inputted lower/upper bound does not give a domain where the actual density is defined. For example, the following input failed to fall within the domain of a Beta(2,2) distribution defined on $[0,1]$, thus resulted in a warning message:
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-1$
+  \item $xub=1$
+\end{itemize}
+The density is given by:
+$$f(x)=\frac{x(1-x)}{beta(2,2)}$$
+The density was plotted below with the inputted domain range highlighted:
+<<bad_lower_upper_bound, echo=FALSE,fig.width=5, fig.height=5>>=
+xval <- seq(0,1,0.001)
+plot(xval, g7(xval), pch=".", col="red", main="Density of Beta(2,2)", xlim = c(-1.5,1.5), xlab="Values", ylab="Density")
+abline(v=c(-1,1), lty=3)
+legend(-0.9,1.4, col=c("red", "black"),lty=c(1,3),legend=c("True Function Value","Input Domain"),cex=0.6)
+@
+It's not surprising that we will have a warning message if we execute the \texttt{ars()} function with these inputs:
+<<output_bad_lower_upper_bound, eval=FALSE>>=
+>   samp04d<-ars(g,n=20000,xlb=-1,xub=1)
+Warning message:
+In ars(g, n = 20000, xlb = -1, xub = 1) :
+  Mode not found in range. Please check your kernel/density or change xlb/xub.
+@
+
+\subsection{Testing on a Uniform Density}
+In the case where we are sampling from a uniform density, a warning message will be displayed to inform the user to use \texttt{runif()} function instead.
+The input parameters we used here are:
+\begin{itemize}
+  \item $n=20000$
+  \item $xlb=-1$
+  \item $xub=1$
+\end{itemize}
+The density is given by:
+$$f(x)=1$$
+<<output_uniform, eval=FALSE>>=
+>   sampu<-ars(g,n=20000,xlb=-1,xub=1)
+Warning message:
+In ars(g, n = 20000, xlb = -1, xub = 1) :
+  Your kernel is uniform, please sample with runif() instead.
+@
+
+\subsection{Testing on a General Bad Input}
+In this case, the user tried to sample from a Beta(2,2) distribution defined on $[0,1]$ with an input range being $[-1,1]$. Also, he specified the number of samples $n$ to be 2.5, which is not an integer. In this case, our \texttt{ars()} function will return two warning messages:
+<<output_general_bad, eval=FALSE>>=
+>   samp04d<-ars(g,n=2.5,xlb=-1,xub=1)
+Warning messages:
+1: In check_input(g, n, xlb, xub) : Sample size must be a bigger integer
+2: In ars(g, n = 2.5, xlb = -1, xub = 1) :
+  Mode not found in range. Please check your kernel/density or change xlb/xub.
+@
+
+\section{Individual Team Member Contributions}
+\begin{tabular}{lrrr}
+\hline
+Name & Contributions &\\
+\hline
+Xi (Edward) Cai & Initializing functions for T\_k, h\_k, h\_k\_prime, z\_k, Area A\_k, u\_k, l\_k &\\
+Zhiwei (Cindy) Cai &Sampling and Squeezing/Rejection testing functions; test() function &\\
+Zixiao Chen &Updating function, inputs and log-concavity checking functions &\\
+\hline
+\\
+\end{tabular}
+\\
+
 
 
 \end{document}
